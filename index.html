@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Company Presentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --honey:#E8A33D; --amber:#C97A1E; --cream:#FFF6EA; --rose:#F3D6D8; --choc:#4A2C20;
+  --u:min(6.25vw,11.111vh);                       /* 1u = 1/16 of a 16:9 frame */
+  --serif:'Playfair Display','Bodoni Moda',Georgia,'Times New Roman',serif;
+  --sans:'Inter','Montserrat',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --fs-body:max(13px,calc(var(--u)*.19));
+  --fs-small:max(11px,calc(var(--u)*.145));
+  --line:rgba(201,122,30,.55);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--cream);color:var(--choc);
+  font-family:var(--sans);font-weight:300;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none}
+#bg{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 42%,#FFFaF2 0%,#FBE8D6 55%,#F3D6D8 100%)}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+#vignette{position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(201,122,30,.13) 100%)}
+#veil{position:fixed;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,246,234,.95),rgba(255,236,210,.55) 70%)}
+#sweep{position:fixed;top:-10%;bottom:-10%;left:0;width:70vw;pointer-events:none;opacity:0;
+  background:linear-gradient(105deg,transparent 30%,rgba(255,236,190,.0) 38%,rgba(255,248,230,.85) 50%,rgba(255,236,190,.0) 62%,transparent 70%);
+  filter:blur(6px);transform:translateX(-100%) skewX(-12deg)}
+
+/* ---------- slides ---------- */
+.slide{position:fixed;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none}
+.slide.active{display:flex}
+.frame{position:relative;width:calc(var(--u)*16);height:calc(var(--u)*9);display:flex;flex-direction:column;align-items:center;
+  text-align:center;padding-top:calc(var(--u)*.8)}
+.overlay{position:absolute;inset:0;pointer-events:none}
+[data-step]{visibility:hidden;opacity:0}
+
+.eyebrow{font-size:var(--fs-small);letter-spacing:.42em;text-transform:uppercase;color:var(--amber);font-weight:400;margin:0}
+.title{font-family:var(--serif);font-weight:500;font-size:max(22px,calc(var(--u)*.5));line-height:1.12;margin:calc(var(--u)*.14) 0 0;
+  letter-spacing:.005em;max-width:calc(var(--u)*13)}
+.lead{font-size:var(--fs-body);line-height:1.75;max-width:calc(var(--u)*8.6);margin:calc(var(--u)*.2) 0 0;color:rgba(74,44,32,.82)}
+.gold-text{background:linear-gradient(100deg,#A85D0C 0%,#D98A25 28%,#F5BB52 50%,#D98A25 72%,#A85D0C 100%);background-size:240% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:shine 7s linear infinite}
+@keyframes shine{from{background-position:120% 0}to{background-position:-120% 0}}
+.brand{font-family:var(--serif);font-style:italic;font-weight:400;font-size:max(30px,calc(var(--u)*.95));line-height:1.1;margin-top:calc(var(--u)*.4)}
+.rule{width:calc(var(--u)*1.2);height:1px;background:linear-gradient(90deg,transparent,var(--honey),transparent);margin:calc(var(--u)*.22) auto 0}
+
+.glass{background:linear-gradient(140deg,rgba(255,255,255,.62),rgba(255,246,234,.28) 55%,rgba(243,214,216,.32));
+  -webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);
+  border:1px solid rgba(255,255,255,.75);border-radius:calc(var(--u)*.26);
+  box-shadow:0 calc(var(--u)*.25) calc(var(--u)*.7) rgba(201,122,30,.16),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(232,163,61,.18)}
+
+/* slide 1 : timeline tags */
+.tag{position:absolute;left:0;top:0;will-change:transform;width:calc(var(--u)*3.4);text-align:center}
+.tag-in .date{font-family:var(--serif);font-size:max(20px,calc(var(--u)*.42));font-weight:500;color:var(--amber)}
+.tag-in .cap{font-size:var(--fs-small);letter-spacing:.06em;margin-top:.2em;color:rgba(74,44,32,.78);line-height:1.5}
+
+/* slide 2 : org chart */
+.f2 .title{font-size:max(20px,calc(var(--u)*.4))}
+#orgWrap{position:absolute;left:0;right:0;top:calc(var(--u)*1.75);bottom:calc(var(--u)*.7);display:flex;justify-content:center;overflow:visible}
+.tree{transform-origin:top center;pointer-events:none}
+.tree ul{display:flex;justify-content:center;margin:0;padding:calc(var(--u)*.55) 0 0;position:relative}
+.tree>ul{padding-top:0}
+.tree li{list-style:none;position:relative;display:flex;flex-direction:column;align-items:center;padding:calc(var(--u)*.55) calc(var(--u)*.12) 0}
+.tree>ul>li{padding-top:0}
+.tree li::before,.tree li::after{content:'';position:absolute;top:0;right:50%;width:50%;height:calc(var(--u)*.55);border-top:1.5px solid var(--line)}
+.tree li::after{right:auto;left:50%;border-left:1.5px solid var(--line)}
+.tree li:only-child::before{display:none}
+.tree li:only-child::after{border-top:0;width:0}
+.tree li:first-child::before,.tree li:last-child::after{border:0 none}
+.tree li:last-child::before{border-right:1.5px solid var(--line);border-radius:0 calc(var(--u)*.14) 0 0}
+.tree li:first-child::after{border-radius:calc(var(--u)*.14) 0 0 0}
+.tree ul ul::before{content:'';position:absolute;top:0;left:50%;border-left:1.5px solid var(--line);height:calc(var(--u)*.55)}
+.tree>ul>li::before,.tree>ul>li::after{display:none}
+.card{position:relative;pointer-events:auto;width:calc(var(--u)*1.95);height:calc(var(--u)*1.12);padding:calc(var(--u)*.1) calc(var(--u)*.12);
+  display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*.05);cursor:text;transition:box-shadow .3s,transform .3s}
+.card.l0{width:calc(var(--u)*2.7)}
+.card.l1{width:calc(var(--u)*2.3)}
+.card:hover,.card:focus-within{transform:translateY(-2px);box-shadow:0 calc(var(--u)*.3) calc(var(--u)*.8) rgba(201,122,30,.28),inset 0 1px 0 #fff}
+.card .nm,.card .rl{outline:none;min-height:1.2em;cursor:text;word-break:break-word;border-radius:6px;user-select:text;-webkit-user-select:text}
+.card .nm{font-family:var(--serif);font-weight:500;font-size:max(12px,calc(var(--u)*.2))}
+.card .rl{font-size:max(9px,calc(var(--u)*.125));letter-spacing:.16em;text-transform:uppercase;color:var(--amber);font-weight:400}
+.card [data-ph]:empty::before{content:attr(data-ph);color:rgba(74,44,32,.3);font-style:italic;text-transform:none;letter-spacing:.04em;pointer-events:none}
+.card .nm:focus,.card .rl:focus{background:rgba(255,255,255,.55)}
+.ctl{position:absolute;width:calc(var(--u)*.3);height:calc(var(--u)*.3);min-width:18px;min-height:18px;border-radius:50%;border:1px solid rgba(201,122,30,.5);
+  background:rgba(255,250,242,.95);color:var(--amber);font:400 max(11px,calc(var(--u)*.2))/1 var(--sans);padding:0;cursor:pointer;
+  opacity:0;transform:scale(.7);transition:.25s;display:flex;align-items:center;justify-content:center}
+.card:hover .ctl,.card:focus-within .ctl{opacity:1;transform:scale(1)}
+.ctl:hover{background:var(--honey);color:#fff}
+.ctl.del{top:-9px;right:-9px}
+.ctl.child{bottom:-10px;left:50%;margin-left:-.5em}
+.ctl.sib{right:-10px;top:50%;margin-top:-.5em}
+.orgtools{position:absolute;right:calc(var(--u)*.3);bottom:calc(var(--u)*.1);pointer-events:auto;display:flex;gap:calc(var(--u)*.2)}
+.orgtools button{background:none;border:0;font:300 var(--fs-small) var(--sans);letter-spacing:.14em;text-transform:uppercase;color:rgba(74,44,32,.45);cursor:pointer;padding:6px}
+.orgtools button:hover{color:var(--amber)}
+
+/* slide 3 */
+.blocks{position:absolute;left:calc(var(--u)*1.1);right:calc(var(--u)*1.1);bottom:calc(var(--u)*.7);display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--u)*.35)}
+.block{padding:calc(var(--u)*.3) calc(var(--u)*.38);text-align:left}
+.block .lbl{font-size:var(--fs-small);letter-spacing:.34em;text-transform:uppercase;color:var(--amber);font-weight:400}
+.block .txt{margin-top:calc(var(--u)*.14);font-size:var(--fs-body);line-height:1.6;color:rgba(74,44,32,.86)}
+.f3 .title{max-width:calc(var(--u)*14)}
+
+/* slide 4 */
+.f4{align-items:flex-start;text-align:left}
+.f4 .right{position:absolute;left:calc(var(--u)*7.9);right:calc(var(--u)*1.1);top:calc(var(--u)*1.2)}
+.f4 .title{font-size:max(22px,calc(var(--u)*.46))}
+.job{font-family:var(--serif);font-style:italic;font-weight:400;font-size:max(22px,calc(var(--u)*.62));margin-top:calc(var(--u)*.3);line-height:1.15}
+.missions{list-style:none;margin:calc(var(--u)*.5) 0 0;padding:0;display:flex;flex-direction:column;gap:calc(var(--u)*.26)}
+.missions li{display:flex;gap:calc(var(--u)*.3);align-items:baseline;font-size:var(--fs-body);line-height:1.6;color:rgba(74,44,32,.88);
+  padding-bottom:calc(var(--u)*.22);border-bottom:1px solid rgba(201,122,30,.22)}
+.missions .num{font-family:var(--serif);font-size:max(16px,calc(var(--u)*.3));color:var(--amber);min-width:1.6em}
+
+/* slide 5 */
+.stylebox .k{font-size:var(--fs-small);letter-spacing:.34em;text-transform:uppercase;color:var(--amber);margin-top:calc(var(--u)*.3);font-weight:400}
+.stylebox .v{font-family:var(--serif);font-style:italic;font-size:max(26px,calc(var(--u)*.7));line-height:1.1;margin-top:calc(var(--u)*.06)}
+.stylebox .d{font-size:var(--fs-body);color:rgba(74,44,32,.78);margin-top:calc(var(--u)*.08);max-width:calc(var(--u)*7)}
+.col{position:absolute;top:calc(var(--u)*4.1);width:calc(var(--u)*4.7);padding:calc(var(--u)*.3) calc(var(--u)*.4);text-align:left}
+.col.left{left:calc(var(--u)*1);} .col.right{right:calc(var(--u)*1)}
+.col h3{margin:0 0 calc(var(--u)*.2);font-family:var(--serif);font-weight:500;font-size:max(17px,calc(var(--u)*.3))}
+.col ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:calc(var(--u)*.16)}
+.col li{font-size:var(--fs-body);line-height:1.5;padding-left:1.5em;position:relative;color:rgba(74,44,32,.88)}
+.col li::before{content:'';position:absolute;left:.1em;top:.62em;width:.55em;height:.55em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFE2A6,#E8A33D 55%,#C97A1E)}
+.col.right li::before{background:radial-gradient(circle at 35% 30%,#fff,#F3D6D8 55%,#D9A0A8)}
+
+/* slide 6 */
+.cards{position:absolute;right:calc(var(--u)*1);top:calc(var(--u)*2.3);width:calc(var(--u)*8);display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--u)*.3)}
+.sug{padding:calc(var(--u)*.3) calc(var(--u)*.34);text-align:left;min-height:calc(var(--u)*2.6)}
+.sug .n{font-family:var(--serif);font-size:max(16px,calc(var(--u)*.34));color:var(--amber)}
+.sug h3{margin:calc(var(--u)*.08) 0 calc(var(--u)*.1);font-family:var(--serif);font-weight:500;font-size:max(15px,calc(var(--u)*.27));line-height:1.2}
+.sug p{margin:0;font-size:var(--fs-small);line-height:1.65;color:rgba(74,44,32,.82);letter-spacing:.01em}
+
+/* slide 7 */
+.f7{justify-content:center;padding-top:0}
+.thanks{font-family:var(--serif);font-weight:500;font-size:max(46px,calc(var(--u)*1.9));margin:0;line-height:1.05;white-space:nowrap}
+.thanks .ch{display:inline-block;background:linear-gradient(100deg,#A85D0C 0%,#D98A25 28%,#F7C566 50%,#D98A25 72%,#A85D0C 100%);background-size:260% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:shine 4.5s linear infinite;animation-delay:calc(var(--i)*-.22s)}
+.thanks .sp{display:inline-block;width:.32em}
+.sub{font-size:max(14px,calc(var(--u)*.26));letter-spacing:.5em;text-transform:uppercase;font-weight:300;margin-top:calc(var(--u)*.45);color:var(--choc)}
+
+/* HUD */
+#hud{position:fixed;left:0;right:0;bottom:max(14px,2.4vh);text-align:center;pointer-events:none;
+  font-size:max(11px,calc(var(--u)*.15));letter-spacing:.38em;color:rgba(74,44,32,.55);font-weight:300}
+#hud b{font-weight:400;color:var(--amber)}
+#hint{position:fixed;left:0;right:0;bottom:max(34px,5.2vh);text-align:center;pointer-events:none;font-size:max(10px,calc(var(--u)*.12));
+  letter-spacing:.3em;text-transform:uppercase;color:rgba(74,44,32,.4);transition:opacity 1s}
+#noWebgl{display:none;position:fixed;top:10px;left:10px;font-size:11px;opacity:.5}
+
+@media (max-aspect-ratio:1/1){
+  :root{--u:11.111vw;--fs-body:15px;--fs-small:12px}
+  .frame{width:100vw;height:100vh;height:100dvh;overflow-y:auto;overflow-x:hidden;padding:56px 22px 70px;pointer-events:auto;justify-content:flex-start}
+  .title{max-width:100%}
+  .f4 .right,.cards,.blocks,.col{position:static;width:100%;left:auto;right:auto;display:flex;flex-direction:column;gap:12px;margin-top:14px}
+  .f4{align-items:center;text-align:center}.f4 .right{margin-top:34vh}
+  .f5 .stylebox{margin-top:26vh}.f3 .blocks{margin-top:34vh}.f6 .cards{margin-top:34vh}.f5 .col{margin-top:10px}
+  #orgWrap{position:static;margin-top:20px;height:62vh;justify-content:center}
+  .tag{width:30vw}
+}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<canvas id="gl"></canvas>
+<div id="vignette"></div>
+<div id="slides"></div>
+<div id="veil"></div>
+<div id="sweep"></div>
+<div id="hint">Click · → · Space to continue</div>
+<div id="hud"><b id="cur">1</b> / <span id="tot">7</span></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js",
+  "three/addons/":"https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/examples/jsm/"
+}}
+</script>
+
+<script type="module">
+/* =====================================================================
+   CONTENT — edit every text of the presentation here.
+   (Sample text below is only a placeholder simulation.)
+   ===================================================================== */
+const CONTENT = {
+  s1: {
+    eyebrow: "01 — The company",
+    title: "History and presentation of the company",
+    name: "Maison Aurea",
+    intro: "A family-run studio crafting premium fragrances and scented candles, blending Provençal tradition with a modern, sustainable vision.",
+    timeline: [
+      { date: "1998", label: "Founded by two friends in Lyon" },
+      { date: "2007", label: "First flagship boutique opens" },
+      { date: "2015", label: "Launch of the online store" },
+      { date: "2024", label: "40 partner boutiques across Europe" }
+    ]
+  },
+  s2: {
+    eyebrow: "02 — Structure",
+    title: "Organization chart",
+    // true = start with sample names, false = start with empty boxes
+    prefill: true,
+    tree: {
+      name: "Claire Dubois", role: "Managing Director",
+      children: [
+        { name: "Marc Laurent", role: "Operations Manager", children: [
+          { name: "Léa Martin", role: "Logistics Coordinator" },
+          { name: "Hugo Bernard", role: "Production Lead" } ] },
+        { name: "Sofia Moreau", role: "Sales & Marketing Manager", children: [
+          { name: "Nina Petit", role: "Brand Specialist" },
+          { name: "Tom Garnier", role: "Account Executive" } ] },
+        { name: "Julien Roux", role: "Finance & HR Manager", children: [
+          { name: "Emma Faure", role: "Accountant" },
+          { name: "Lucas Blanc", role: "HR Assistant" } ] }
+      ]
+    }
+  },
+  s3: {
+    eyebrow: "03 — The market",
+    title: "Activity, target clientele and catchment area",
+    blocks: [
+      { label: "Activity", text: "Design, production and retail of luxury fragrances, home scents and gift sets." },
+      { label: "Target clientele", text: "Style-conscious adults aged 25–55, gift buyers and premium hospitality partners." },
+      { label: "Catchment area", text: "Auvergne-Rhône-Alpes at the core, expanding to France, Benelux and Switzerland." }
+    ]
+  },
+  s4: {
+    eyebrow: "04 — Position",
+    title: "My role in the company",
+    job: "Customer Experience Manager",
+    missions: [
+      "Coordinate the boutique teams and keep service standards consistent.",
+      "Analyse customer feedback and turn it into concrete improvements.",
+      "Plan seasonal launches together with the marketing team.",
+      "Train and coach new sales advisors during their first months."
+    ]
+  },
+  s5: {
+    eyebrow: "05 — Analysis",
+    title: "Management analysis",
+    styleLabel: "Observed management style",
+    style: "Participative",
+    styleText: "Decisions are discussed as a team, while the director keeps the final word.",
+    strengthsTitle: "Strengths",
+    strengths: [
+      "Open door policy and strong team spirit",
+      "Employees feel heard and valued",
+      "Fast, creative problem solving"
+    ],
+    weaknessesTitle: "Weaknesses",
+    weaknesses: [
+      "Decisions can take a long time",
+      "Roles and priorities sometimes overlap",
+      "Few formal performance reviews"
+    ]
+  },
+  s6: {
+    eyebrow: "06 — Ideas",
+    title: "Suggestions to improve the management",
+    cards: [
+      { title: "Clarify roles", text: "Write one-page role descriptions so everyone knows who decides what." },
+      { title: "Regular feedback", text: "Introduce short quarterly one-to-ones to recognise progress and set goals." },
+      { title: "Smarter meetings", text: "Shorter weekly stand-ups with a clear agenda and written action points." },
+      { title: "Grow the talents", text: "Offer a training budget and mentoring to prepare future team leaders." }
+    ]
+  },
+  s7: { title: "Thank you", subtitle: "Any questions?" }
+};
+
+/* ===================================================================== */
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const N = 7, SPACING = 70;
+
+/* ---------------------------------------------------------------------
+   Slides (HTML)
+   --------------------------------------------------------------------- */
+const C = CONTENT;
+const slideHTML = [
+  /* 1 */ `<div class="frame f1">
+    <div class="in eyebrow">${esc(C.s1.eyebrow)}</div>
+    <h1 class="in title">${esc(C.s1.title)}</h1>
+    <div class="in brand gold-text">${esc(C.s1.name)}</div>
+    <div class="in rule"></div>
+    <p class="in lead">${esc(C.s1.intro)}</p></div>
+    <div class="overlay">${C.s1.timeline.map((t, j) => `<div class="tag" data-j="${j}"><div class="tag-in ${j ? '' : 'in'}" ${j ? `data-step="${j}"` : ''}>
+      <div class="date">${esc(t.date)}</div><div class="cap">${esc(t.label)}</div></div></div>`).join('')}</div>`,
+  /* 2 */ `<div class="frame f2">
+    <div class="in eyebrow">${esc(C.s2.eyebrow)}</div>
+    <h1 class="in title">${esc(C.s2.title)}</h1>
+    <div id="orgWrap" class="in"><div class="tree" id="tree"></div></div>
+    <div class="orgtools in"><button id="orgSample">Sample</button><button id="orgClear">Clear</button></div></div>`,
+  /* 3 */ `<div class="frame f3">
+    <div class="in eyebrow">${esc(C.s3.eyebrow)}</div>
+    <h1 class="in title">${esc(C.s3.title)}</h1>
+    <div class="blocks">${C.s3.blocks.map((b, j) => `<div class="block glass" data-step="${j + 1}">
+      <div class="lbl">${esc(b.label)}</div><div class="txt">${esc(b.text)}</div></div>`).join('')}</div></div>`,
+  /* 4 */ `<div class="frame f4"><div class="right">
+    <div class="in eyebrow">${esc(C.s4.eyebrow)}</div>
+    <h1 class="in title">${esc(C.s4.title)}</h1>
+    <div class="in job gold-text">${esc(C.s4.job)}</div>
+    <ul class="missions">${C.s4.missions.map((m, j) => `<li data-step="${j + 1}"><span class="num">0${j + 1}</span><span>${esc(m)}</span></li>`).join('')}</ul></div></div>`,
+  /* 5 */ `<div class="frame f5">
+    <div class="in eyebrow">${esc(C.s5.eyebrow)}</div>
+    <h1 class="in title">${esc(C.s5.title)}</h1>
+    <div class="in stylebox"><div class="k">${esc(C.s5.styleLabel)}</div><div class="v gold-text">${esc(C.s5.style)}</div><div class="d">${esc(C.s5.styleText)}</div></div>
+    <div class="col left glass" data-step="1"><h3>${esc(C.s5.strengthsTitle)}</h3><ul>${C.s5.strengths.map(s => `<li>${esc(s)}</li>`).join('')}</ul></div>
+    <div class="col right glass" data-step="2"><h3>${esc(C.s5.weaknessesTitle)}</h3><ul>${C.s5.weaknesses.map(s => `<li>${esc(s)}</li>`).join('')}</ul></div></div>`,
+  /* 6 */ `<div class="frame f6">
+    <div class="in eyebrow">${esc(C.s6.eyebrow)}</div>
+    <h1 class="in title">${esc(C.s6.title)}</h1>
+    <div class="cards">${C.s6.cards.map((c, j) => `<div class="sug glass" data-step="${j + 1}"><div class="n">0${j + 1}</div><h3>${esc(c.title)}</h3><p>${esc(c.text)}</p></div>`).join('')}</div></div>`,
+  /* 7 */ `<div class="frame f7">
+    <h1 class="thanks in">${[...C.s7.title].map((ch, i) => ch === ' ' ? '<span class="sp"></span>' : `<span class="ch" style="--i:${i}">${esc(ch)}</span>`).join('')}</h1>
+    <div class="in sub">${esc(C.s7.subtitle)}</div></div>`
+];
+const slidesEl = $('#slides');
+const slides = slideHTML.map((h, i) => {
+  const s = document.createElement('section'); s.className = 'slide'; s.id = 's' + (i + 1); s.innerHTML = h; slidesEl.appendChild(s); return s;
+});
+const stepsOf = slides.map(s => Math.max(0, ...$$('[data-step]', s).map(e => +e.dataset.step)));
+$('#tot').textContent = N;
+
+/* ---------------------------------------------------------------------
+   Org chart (editable, saved in localStorage)
+   --------------------------------------------------------------------- */
+const LS_KEY = 'diapo-orgchart-v1';
+const clone = o => JSON.parse(JSON.stringify(o));
+const blankTree = () => ({ name: '', role: '', children: [0, 1, 2].map(() => ({ name: '', role: '', children: [{ name: '', role: '' }, { name: '', role: '' }] })) });
+let tree;
+try { tree = JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { tree = null; }
+if (!tree || typeof tree !== 'object') tree = C.s2.prefill ? clone(C.s2.tree) : blankTree();
+const saveTree = () => { try { localStorage.setItem(LS_KEY, JSON.stringify(tree)); } catch (e) {} };
+const treeEl = $('#tree');
+function fitTree() {
+  const wrap = $('#orgWrap'); if (!wrap || !wrap.offsetWidth) return;
+  treeEl.style.transform = 'none';
+  const k = Math.min(1, (wrap.clientWidth - 20) / treeEl.scrollWidth, wrap.clientHeight / treeEl.scrollHeight);
+  treeEl.style.transform = `scale(${k})`;
+}
+function plain(el, node, key) {
+  el.contentEditable = 'true'; el.spellcheck = false; el.textContent = node[key] || '';
+  el.addEventListener('input', () => { if (!el.textContent.trim()) el.innerHTML = ''; node[key] = el.textContent; saveTree(); });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); el.blur(); } e.stopPropagation(); });
+  el.addEventListener('paste', e => { e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData.getData('text/plain') || '').replace(/\s+/g, ' ')); });
+}
+function renderTree() {
+  treeEl.innerHTML = '';
+  const build = (node, depth, parent) => {
+    const li = document.createElement('li');
+    const card = document.createElement('div'); card.className = `card glass l${depth}`;
+    const nm = document.createElement('div'); nm.className = 'nm'; nm.dataset.ph = 'Name'; plain(nm, node, 'name');
+    const rl = document.createElement('div'); rl.className = 'rl'; rl.dataset.ph = 'Position'; plain(rl, node, 'role');
+    card.append(nm, rl);
+    const btn = (cls, txt, title, fn) => { const b = document.createElement('button'); b.className = 'ctl ' + cls; b.textContent = txt; b.title = title; b.tabIndex = -1;
+      b.addEventListener('click', e => { e.stopPropagation(); fn(); saveTree(); renderTree(); }); card.appendChild(b); };
+    if (parent) { btn('del', '×', 'Remove this box', () => { parent.children.splice(parent.children.indexOf(node), 1); });
+                  btn('sib', '+', 'Add a box beside', () => { parent.children.splice(parent.children.indexOf(node) + 1, 0, { name: '', role: '' }); }); }
+    if (depth < 2) btn('child', '+', 'Add a box below', () => { (node.children = node.children || []).push({ name: '', role: '' }); });
+    li.appendChild(card);
+    if (node.children && node.children.length) { const ul = document.createElement('ul'); node.children.forEach(c => ul.appendChild(build(c, depth + 1, node))); li.appendChild(ul); }
+    return li;
+  };
+  const ul = document.createElement('ul'); ul.appendChild(build(tree, 0, null)); treeEl.appendChild(ul);
+  requestAnimationFrame(fitTree);
+}
+renderTree();
+$('#orgSample').addEventListener('click', e => { e.stopPropagation(); tree = clone(C.s2.tree); saveTree(); renderTree(); });
+$('#orgClear').addEventListener('click', e => { e.stopPropagation(); if (confirm('Clear every box of the organization chart?')) { tree = blankTree(); saveTree(); renderTree(); } });
+addEventListener('resize', fitTree);
+
+/* ---------------------------------------------------------------------
+   3D engine (Three.js). The presentation still works without WebGL.
+   --------------------------------------------------------------------- */
+const cam = { x: 0, y: 0, z: 14, fov: 32 };
+const fx = { blur: 0 };
+const pointer = { x: 0, y: 0, sx: 0, sy: 0 };
+let engine = null;       // { worlds, setVisible, applyBlur, ... }
+let current = 0;
+
+async function initEngine() {
+  const THREE = await import('three');
+  let RoomEnvironment = null;
+  try { ({ RoomEnvironment } = await import('three/addons/environments/RoomEnvironment.js')); } catch (e) { console.warn('RoomEnvironment unavailable, using fallback', e); }
+
+  const canvas = $('#gl');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  renderer.localClippingEnabled = true;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(cam.fov, 16 / 9, .1, 300);
+  scene.add(camera);
+
+  /* background gradient (also seen through glass) */
+  { const c = document.createElement('canvas'); c.width = 1024; c.height = 576; const g = c.getContext('2d');
+    let gr = g.createRadialGradient(512, 240, 20, 512, 260, 640); gr.addColorStop(0, '#FFFAF2'); gr.addColorStop(.55, '#FBE8D6'); gr.addColorStop(1, '#F3D6D8');
+    g.fillStyle = gr; g.fillRect(0, 0, 1024, 576);
+    gr = g.createLinearGradient(0, 300, 0, 576); gr.addColorStop(0, 'rgba(232,163,61,0)'); gr.addColorStop(1, 'rgba(232,163,61,.2)'); g.fillStyle = gr; g.fillRect(0, 0, 1024, 576);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; scene.background = t; }
+
+  /* studio environment (warm tinted) for reflections */
+  const envScene = RoomEnvironment ? new RoomEnvironment() : (() => {
+    const s = new THREE.Scene();
+    s.add(new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshStandardMaterial({ side: THREE.BackSide, color: 0xb0a090 })));
+    [[0, 4.9, 0, 6, .1, 6], [-4.9, 0, 0, .1, 4, 6], [4.9, 0, 0, .1, 4, 6]].forEach(p => { const m = new THREE.Mesh(new THREE.BoxGeometry(p[3], p[4], p[5]), new THREE.MeshBasicMaterial({ color: new THREE.Color(30, 30, 30) })); m.position.set(p[0], p[1], p[2]); s.add(m); });
+    return s; })();
+  { const warm = new THREE.Color(1, .87, .7), seen = new Set(); envScene.traverse(o => { if (o.material && o.material.color && !seen.has(o.material)) { seen.add(o.material); o.material.color.multiply(warm); } }); }
+  { const panel = (x, y, z, w, h, d, c) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: c })); m.position.set(x, y, z); envScene.add(m); };
+    panel(0, 3.2, 3.5, 7, .2, 3, new THREE.Color(9, 7.4, 5)); panel(-4, 0, 1, .2, 5, 5, new THREE.Color(7, 5.4, 3.6)); panel(4, 0, 1, .2, 5, 5, new THREE.Color(7, 5.6, 4.4));
+    panel(0, 0, -4, 8, 4, .2, new THREE.Color(5, 4, 3)); panel(0, -3, 2, 6, .2, 4, new THREE.Color(4, 3, 2)); }
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(envScene, .04).texture;
+  scene.add(new THREE.HemisphereLight(0xfff1dc, 0xf3d6d8, .5));
+  const key = new THREE.DirectionalLight(0xffe2b8, 2.0); key.position.set(4, 6, 8); scene.add(key);
+
+  /* ---------- materials ---------- */
+  const phys = o => new THREE.MeshPhysicalMaterial(o);
+  const M = {
+    gold: phys({ color: 0xE8A33D, metalness: 1, roughness: .16, clearcoat: 1, clearcoatRoughness: .04, envMapIntensity: 3.2 }),
+    deep: phys({ color: 0xE3A244, metalness: 1, roughness: .3, clearcoat: .6, envMapIntensity: 2.8 }),
+    glass: phys({ color: 0xffffff, roughness: .03, transmission: 1, thickness: 1.2, ior: 1.45, clearcoat: 1, envMapIntensity: 1.3, attenuationColor: new THREE.Color(0xFFE2B8), attenuationDistance: 3.5 }),
+    amber: phys({ color: 0xFFC46B, roughness: .05, transmission: 1, thickness: 1.6, ior: 1.5, clearcoat: 1, envMapIntensity: 1.3, attenuationColor: new THREE.Color(0xE8A33D), attenuationDistance: 2.2 }),
+    pink: phys({ color: 0xF3D6D8, roughness: .05, transmission: 1, thickness: 1.4, ior: 1.45, clearcoat: 1, envMapIntensity: 1.3, attenuationColor: new THREE.Color(0xE9A5AE), attenuationDistance: 1.8 }),
+    honey: phys({ color: 0xFFDFA0, roughness: .06, transmission: 1, thickness: 1.5, ior: 1.5, clearcoat: 1, envMapIntensity: 1.3, attenuationColor: new THREE.Color(0xF0B955), attenuationDistance: 1.4 }),
+    liquid: phys({ color: 0xFFB347, emissive: 0xE8A33D, emissiveIntensity: .75, metalness: .2, roughness: .08, clearcoat: 1, side: THREE.DoubleSide })
+  };
+  const glassSet = [M.glass, M.amber, M.pink, M.honey];
+
+  /* ---------- helpers ---------- */
+  const mesh = (g, m) => new THREE.Mesh(g, m);
+  const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.25, 'rgba(255,255,255,.55)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  function roundedBox(w, h, d, r) {
+    const b = Math.min(r * .6, d / 2 - .001), ew = w - 2 * b, eh = h - 2 * b, rr = Math.min(r, ew / 2, eh / 2), x = -ew / 2, y = -eh / 2, s = new THREE.Shape();
+    s.moveTo(x + rr, y); s.lineTo(x + ew - rr, y); s.quadraticCurveTo(x + ew, y, x + ew, y + rr); s.lineTo(x + ew, y + eh - rr); s.quadraticCurveTo(x + ew, y + eh, x + ew - rr, y + eh);
+    s.lineTo(x + rr, y + eh); s.quadraticCurveTo(x, y + eh, x, y + eh - rr); s.lineTo(x, y + rr); s.quadraticCurveTo(x, y, x + rr, y);
+    const g = new THREE.ExtrudeGeometry(s, { depth: d - 2 * b, bevelEnabled: true, bevelThickness: b, bevelSize: b, bevelSegments: 5, curveSegments: 8 });
+    g.translate(0, 0, -(d - 2 * b) / 2); return g;
+  }
+  function gearGeo(R, teeth, th, hole, depth) {
+    const s = new THREE.Shape(), w = Math.PI * 2 / teeth;
+    for (let k = 0; k < teeth; k++) { const a = k * w;
+      [[0, R], [.18, R + th], [.5, R + th], [.68, R]].forEach(([f, r], idx) => { const an = a + f * w; const x = Math.cos(an) * r, y = Math.sin(an) * r; (k === 0 && idx === 0) ? s.moveTo(x, y) : s.lineTo(x, y); }); }
+    const h = new THREE.Path(); h.absarc(0, 0, hole, 0, Math.PI * 2, true); s.holes.push(h);
+    for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2, hp = new THREE.Path(); hp.absarc(Math.cos(a) * R * .56, Math.sin(a) * R * .56, R * .15, 0, Math.PI * 2, true); s.holes.push(hp); }
+    const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: .06, bevelSize: .06, bevelSegments: 3, curveSegments: 10 }); g.translate(0, 0, -depth / 2); return g;
+  }
+  function arrowGeo() {
+    const s = new THREE.Shape(); [[0, 1], [.62, .28], [.24, .28], [.24, -.8], [-.24, -.8], [-.24, .28], [-.62, .28]].forEach((p, i) => i ? s.lineTo(p[0], p[1]) : s.moveTo(p[0], p[1]));
+    const g = new THREE.ExtrudeGeometry(s, { depth: .12, bevelEnabled: true, bevelThickness: .05, bevelSize: .05, bevelSegments: 4 }); g.translate(0, 0, -.06); return g;
+  }
+  const decor = (root, n, spread) => { // tiny floating glass / gold beads
+    const arr = []; const geo = new THREE.SphereGeometry(1, 20, 14);
+    for (let i = 0; i < n; i++) { const m = mesh(geo, i % 3 ? glassSet[i % 4] : M.gold); const s = rnd(.06, .2); m.scale.setScalar(s);
+      m.position.set(rnd(-spread[0], spread[0]), rnd(-spread[1], spread[1]), rnd(-4, 1.5)); m.userData = { ph: rnd(0, 6.28), sp: rnd(.2, .5), y0: m.position.y }; root.add(m); arr.push(m); }
+    return t => arr.forEach(m => { m.position.y = m.userData.y0 + Math.sin(t * m.userData.sp + m.userData.ph) * .25; });
+  };
+
+  /* ---------- bokeh / sparkle dust (follows the camera, parallax on travel) ---------- */
+  const bokeh = (() => {
+    const n = 300, pos = new Float32Array(n * 3), dat = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) { const depth = rnd(4, 34); pos.set([rnd(-1, 1) * depth * .85, rnd(-8, 8), -depth], i * 3);
+      const spark = Math.random() < .42; dat.set([Math.random(), spark ? rnd(.05, .16) : rnd(.18, .75), spark ? rnd(.72, 1) : rnd(0, .72), rnd(.4, 1.4)], i * 4); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('aData', new THREE.BufferAttribute(dat, 4));
+    const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { uTime: { value: 0 }, uCamX: { value: 0 }, uScale: { value: 1000 } },
+      vertexShader: `attribute vec4 aData; uniform float uTime,uCamX,uScale; varying float vA; varying float vK;
+        void main(){ vec3 p=position; float depth=-p.z; float R=depth*.9;
+          p.x=mod(p.x-uCamX+R,2.*R)-R; p.x+=sin(uTime*aData.w*.6+aData.x*6.28)*.35;
+          p.y=mod(p.y+uTime*.1*aData.w+8.,16.)-8.;
+          vK=aData.z; vA=(.55+.45*sin(uTime*(.8+aData.w*1.6)+aData.x*40.))*smoothstep(2.,6.,depth);
+          gl_PointSize=min(aData.y*uScale/depth,140.); gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.); }`,
+      fragmentShader: `varying float vA; varying float vK;
+        void main(){ vec2 c=gl_PointCoord-.5; float d=length(c)*2.;
+          float bok=smoothstep(1.,.6,d)*.28+smoothstep(.22,0.,abs(d-.84))*.45;
+          float st=pow(max(0.,1.-abs(c.x)*10.),2.)*pow(max(0.,1.-abs(c.y)*2.),2.)+pow(max(0.,1.-abs(c.y)*10.),2.)*pow(max(0.,1.-abs(c.x)*2.),2.)+smoothstep(.45,0.,d);
+          float k=step(.72,vK); float a=mix(bok,st,k)*vA;
+          vec3 col=mix(vec3(.91,.64,.24),vec3(1.,.88,.55),k); col=mix(col,vec3(.93,.68,.7),step(.4,vK)*step(vK,.55));
+          gl_FragColor=vec4(col,clamp(a,0.,1.)*.85); }` });
+    const pts = new THREE.Points(g, mat); pts.frustumCulled = false; camera.add(pts); return mat; })();
+
+  /* =================== WORLDS =================== */
+  const worlds = [];
+  const mk = i => { const root = new THREE.Group(); root.position.x = i * SPACING; root.visible = false; scene.add(root); return root; };
+
+  /* ---- 1 · liquid gold ribbon timeline ---- */
+  worlds[0] = (() => {
+    const root = mk(0), uni = { uTime: { value: 0 }, uFill: { value: -9 } };
+    const AMP = .8, wave = (x, t, ph = 0, a = AMP) => a * (Math.sin(x * .55 + t * .7 + ph) * .6 + Math.sin(x * .23 - t * .4 + ph * .5) * .4);
+    const inject = (mat, ph, a, rad, filled) => { mat.onBeforeCompile = sh => {
+      sh.uniforms.uTime = uni.uTime; sh.uniforms.uFill = uni.uFill;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>\nuniform float uTime; varying float vX;\nfloat wv(float x){ return ${a.toFixed(3)}*(sin(x*.55+uTime*.7+${ph.toFixed(3)})*.6+sin(x*.23-uTime*.4+${(ph * .5).toFixed(3)})*.4); }`)
+        .replace('#include <begin_vertex>', `vec3 transformed=position; vX=position.x; float rr=${rad.toFixed(3)}*(1.+.3*sin(position.x*1.7-uTime*1.6+${ph.toFixed(3)})); transformed=vec3(position.x,wv(position.x)+position.y*rr,position.z*rr);`);
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vX; uniform float uFill;').replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>\n${filled ? 'if(vX>uFill) discard;' : 'if(vX>uFill-.4) discard;'}`);
+    }; mat.side = THREE.DoubleSide; return mat; };
+    const pos = [-5.3, -1.75, 1.75, 5.3], base = -1.35, balls = [];
+    const rib = (mat, ph, a, rad) => { const g = new THREE.CylinderGeometry(1, 1, 18, 28, 600, true); g.rotateZ(Math.PI / 2); const m = mesh(g, inject(mat.clone(), ph, a, rad, true)); m.frustumCulled = false; m.position.y = base; root.add(m); };
+    rib(M.gold, 0, AMP, .2); rib(M.deep, 1.7, AMP * .8, .075);
+    pos.forEach((x, j) => { const g = new THREE.Group(); const shell = mesh(new THREE.SphereGeometry(.46, 48, 32), M.glass); const core = mesh(new THREE.SphereGeometry(.15, 24, 16), M.liquid);
+      g.add(shell, core); g.userData = { x, core }; g.scale.setScalar(0); root.add(g); balls.push(g); });
+    const drop = mesh(new THREE.SphereGeometry(1, 24, 18), M.gold); drop.scale.setScalar(.3); root.add(drop);
+    const floaty = decor(root, 14, [8, 4.2]);
+    let shown = 0, fillTween = null;
+    const fillTo = (n, instant) => { const target = n >= 3 ? 9 : pos[n] + .15; fillTween && fillTween.kill(); fillTween = gsap.to(uni.uFill, { value: target, duration: instant ? 0 : 1.8, ease: 'power2.inOut' }); };
+    return { root, baseBlur: 0, tags: balls,
+      update(t) { uni.uTime.value = t; floaty(t);
+        balls.forEach(b => { b.position.set(b.userData.x, base + wave(b.userData.x, t), 0); b.rotation.y = t * .3; b.userData.core.rotation.y = t; });
+        drop.position.set(Math.min(uni.uFill.value, 8.5), base + wave(uni.uFill.value, t), 0); drop.visible = uni.uFill.value > -8.4 && uni.uFill.value < 8.8; },
+      enter() { uni.uFill.value = -9; shown = 0; balls.forEach(b => b.scale.setScalar(0)); this.setStep(0, false, true); },
+      setStep(n, instant, fresh) { fillTo(n, instant); balls.forEach((b, j) => { const on = j <= n; if (on && (b.scale.x < .5 || fresh)) gsap.to(b.scale, { x: 1, y: 1, z: 1, duration: instant ? 0 : 1.2, ease: 'elastic.out(1,.55)', delay: instant ? 0 : (fresh ? .5 : 1.2) }); if (!on) b.scale.setScalar(0); }); },
+      anchor(j) { return balls[j]; } };
+  })();
+
+  /* ---- 2 · glass node network ---- */
+  worlds[1] = (() => {
+    const root = mk(1), g = new THREE.Group(); root.add(g);
+    const nodes = [], geo = new THREE.SphereGeometry(1, 32, 22);
+    for (let i = 0; i < 34; i++) { const m = mesh(geo, i % 5 === 0 ? M.gold : glassSet[i % 4]); const s = rnd(.14, .46); m.scale.setScalar(s);
+      m.position.set(rnd(-8.5, 8.5), rnd(-4.6, 4.6), rnd(-6, 1.5)); m.userData = { ph: rnd(0, 6.28), sp: rnd(.2, .5), p0: m.position.clone() }; g.add(m); nodes.push(m); }
+    const edges = []; nodes.forEach((a, i) => nodes.map((b, j) => ({ j, d: a.position.distanceTo(b.position) })).filter(o => o.j !== i).sort((p, q) => p.d - q.d).slice(0, 2).forEach(o => { if (!edges.some(e => (e[0] === i && e[1] === o.j) || (e[0] === o.j && e[1] === i))) edges.push([i, o.j]); }));
+    const lp = new Float32Array(edges.length * 6), lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(lp, 3));
+    g.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0xD98E2B, transparent: true, opacity: .75 })));
+    const np = 46, pp = new Float32Array(np * 3), pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+    const pulses = Array.from({ length: np }, () => ({ e: Math.floor(Math.random() * edges.length), t: Math.random(), s: rnd(.15, .4) }));
+    g.add(new THREE.Points(pg, new THREE.PointsMaterial({ map: glowTex, color: 0xFFC463, size: .5, transparent: true, depthWrite: false })));
+    return { root, baseBlur: 3.2,
+      update(t, dt) { g.rotation.y = Math.sin(t * .1) * .22; g.rotation.x = Math.sin(t * .13) * .06;
+        nodes.forEach(n => { const u = n.userData; n.position.set(u.p0.x + Math.sin(t * u.sp + u.ph) * .3, u.p0.y + Math.cos(t * u.sp * 1.3 + u.ph) * .3, u.p0.z); });
+        edges.forEach((e, i) => { const a = nodes[e[0]].position, b = nodes[e[1]].position; lp.set([a.x, a.y, a.z, b.x, b.y, b.z], i * 6); }); lg.attributes.position.needsUpdate = true;
+        pulses.forEach((p, i) => { p.t += dt * p.s; if (p.t > 1) { p.t = 0; p.e = Math.floor(Math.random() * edges.length); } const e = edges[p.e], a = nodes[e[0]].position, b = nodes[e[1]].position; pp.set([a.x + (b.x - a.x) * p.t, a.y + (b.y - a.y) * p.t, a.z + (b.z - a.z) * p.t], i * 3); }); pg.attributes.position.needsUpdate = true; },
+      enter() {}, setStep() {} };
+  })();
+
+  /* ---- 3 · dotted globe + pulsing catchment rings ---- */
+  worlds[2] = (() => {
+    const root = mk(2), globe = new THREE.Group(); globe.position.set(0, .45, 0); root.add(globe);
+    globe.add(mesh(new THREE.SphereGeometry(1.55, 64, 48), phys({ color: 0xFBE3D0, roughness: .35, clearcoat: .6, envMapIntensity: 1 })));
+    globe.add(mesh(new THREE.SphereGeometry(1.86, 64, 48), M.glass));
+    const land = [], N0 = 5200, ga = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < N0; i++) { const y = 1 - 2 * (i + .5) / N0, r = Math.sqrt(1 - y * y), th = i * ga, x = Math.cos(th) * r, z = Math.sin(th) * r;
+      const n = Math.sin(x * 2.3 + 1.1) * Math.sin(y * 2.9 + .4) + Math.sin(z * 3.1 - .7) * Math.cos(x * 2.1) + .5 * Math.sin((x + y + z) * 5.2) * Math.cos(y * 4.1);
+      if (n > .35) land.push([x, y, z]); }
+    const dots = new THREE.InstancedMesh(new THREE.SphereGeometry(.026, 8, 6), M.gold, land.length), d = new THREE.Object3D();
+    land.forEach((p, i) => { d.position.set(p[0] * 1.57, p[1] * 1.57, p[2] * 1.57); d.updateMatrix(); dots.setMatrixAt(i, d.matrix); }); globe.add(dots);
+    const orbit = mesh(new THREE.TorusGeometry(2.25, .012, 8, 160), M.gold); orbit.rotation.x = 1.25; orbit.rotation.y = .3; globe.add(orbit);
+    const orbit2 = mesh(new THREE.TorusGeometry(2.55, .008, 8, 160), M.deep); orbit2.rotation.x = 1.6; orbit2.rotation.y = -.5; globe.add(orbit2);
+    /* pulsing rings (floor) */
+    const floor = new THREE.Group(); floor.position.set(0, -1.15, -.3); floor.rotation.x = -1.12; root.add(floor);
+    const ringGeo = new THREE.RingGeometry(.96, 1, 128), rings = [];
+    for (let i = 0; i < 4; i++) { const m = mesh(ringGeo, new THREE.MeshBasicMaterial({ color: i % 2 ? 0xE8A33D : 0xC97A1E, transparent: true, side: THREE.DoubleSide, depthWrite: false })); floor.add(m); rings.push(m); }
+    const disc = mesh(new THREE.CircleGeometry(1, 64), new THREE.MeshBasicMaterial({ map: glowTex, color: 0xFFB347, transparent: true, opacity: .55, depthWrite: false })); disc.scale.setScalar(3.4); floor.add(disc);
+    const pin = new THREE.Group(); pin.add(mesh(new THREE.SphereGeometry(.2, 24, 16), M.gold)); const cone = mesh(new THREE.ConeGeometry(.17, .42, 24), M.gold); cone.rotation.x = Math.PI; cone.position.y = -.28; pin.add(cone);
+    pin.position.set(0, .5, 0); pin.rotation.x = 1.12; floor.add(pin);
+    /* icons */
+    const icons = [], iconPos = [[-4.0, 1.5, 1], [4.0, 1.7, .5], [-4.8, -.4, 1.5], [4.6, -.3, 1.2], [-2.7, .5, 1.6]];
+    const bag = () => { const g = new THREE.Group(); g.add(mesh(roundedBox(.62, .7, .3, .08), M.amber)); const h = mesh(new THREE.TorusGeometry(.17, .03, 10, 24, Math.PI), M.gold); h.position.y = .35; g.add(h); return g; };
+    const coin = () => { const g = new THREE.Group(); const c = mesh(new THREE.CylinderGeometry(.38, .38, .08, 40), M.gold); c.rotation.x = Math.PI / 2; g.add(c); const r = mesh(new THREE.TorusGeometry(.27, .02, 8, 40), M.deep); g.add(r); return g; };
+    const heart = () => { const s = new THREE.Shape(); s.moveTo(0, -.3); s.bezierCurveTo(-.55, .05, -.3, .45, 0, .22); s.bezierCurveTo(.3, .45, .55, .05, 0, -.3); const g = new THREE.ExtrudeGeometry(s, { depth: .12, bevelEnabled: true, bevelThickness: .08, bevelSize: .06, bevelSegments: 6 }); g.translate(0, 0, -.06); return mesh(g, M.pink); };
+    const person = () => { const g = new THREE.Group(); g.add(mesh(new THREE.SphereGeometry(.17, 24, 16), M.glass)); const b = mesh(new THREE.CapsuleGeometry(.2, .22, 8, 16), M.honey); b.position.y = -.42; g.add(b); return g; };
+    const pinI = () => { const g = new THREE.Group(); g.add(mesh(new THREE.SphereGeometry(.24, 24, 16), M.gold)); const c = mesh(new THREE.ConeGeometry(.2, .5, 24), M.gold); c.rotation.x = Math.PI; c.position.y = -.33; g.add(c); return g; };
+    [bag, heart, coin, person, pinI].forEach((f, i) => { const o = f(); o.position.set(...iconPos[i]); o.userData = { p: o.position.clone(), ph: i * 1.3 }; o.scale.setScalar(1.05); root.add(o); icons.push(o); });
+    return { root, baseBlur: 0,
+      update(t) { globe.rotation.y = t * .12; dots.rotation.y = 0; orbit.rotation.z = t * .15; orbit2.rotation.z = -t * .1;
+        rings.forEach((r, i) => { const k = ((t * .23 + i / 4) % 1); r.scale.setScalar(.35 + k * 2.9); r.material.opacity = (1 - k) * (k < .06 ? k / .06 : 1) * .8; });
+        pin.position.y = .5 + Math.sin(t * 1.6) * .06;
+        icons.forEach(o => { const u = o.userData; o.position.y = u.p.y + Math.sin(t * .8 + u.ph) * .22; o.rotation.y = t * .5 + u.ph; o.rotation.z = Math.sin(t * .5 + u.ph) * .15; }); },
+      enter() {}, setStep() {} };
+  })();
+
+  /* ---- 4 · amber glass knight on a pedestal + golden gears ---- */
+  worlds[3] = (() => {
+    const root = mk(3), stage = new THREE.Group(); stage.position.set(-3.4, -2.4, 0); stage.scale.setScalar(1.05); root.add(stage);
+    const lp = [[0, 0], [1.55, 0], [1.62, .09], [1.55, .2], [1.25, .28], [1.12, .42], [.95, .55], [0, .55]].map(p => new THREE.Vector2(p[0], p[1]));
+    const base = mesh(new THREE.LatheGeometry(lp, 72), M.gold); stage.add(base);
+    const ring = mesh(new THREE.TorusGeometry(1.3, .07, 16, 80), M.amber); ring.rotation.x = Math.PI / 2; ring.position.y = .3; stage.add(ring);
+    const pts = [[-.85, 0], [.85, 0], [.8, .5], [.74, 1.15], [.6, 1.78], [.32, 2.24], [.14, 2.66], [0, 2.42], [-.2, 2.72], [-.38, 2.32], [-.92, 1.74], [-1.22, 1.46], [-1.18, 1.14], [-.8, 1.08], [-.45, 1.0], [-.14, .86], [-.5, .46]].map(p => new THREE.Vector3(p[0], p[1], 0));
+    const curve = new THREE.CatmullRomCurve3(pts, true, 'centripetal'), sp = curve.getPoints(220), shape = new THREE.Shape(sp.map(p => new THREE.Vector2(p.x, p.y)));
+    const kg = new THREE.ExtrudeGeometry(shape, { depth: .55, bevelEnabled: true, bevelThickness: .2, bevelSize: .14, bevelSegments: 10, curveSegments: 16 }); kg.translate(0, 0, -.275);
+    const knightMat = phys({ color: 0xF5A63A, roughness: .04, transmission: .55, thickness: 2.2, ior: 1.5, clearcoat: 1, envMapIntensity: 1.4, attenuationColor: new THREE.Color(0xF2A93A), attenuationDistance: 1.7 });
+    const knight = new THREE.Group(); knight.position.y = .5; knight.add(mesh(kg, knightMat));
+    const eyeG = new THREE.SphereGeometry(.07, 16, 12); [-1, 1].forEach(s => { const e = mesh(eyeG, M.gold); e.position.set(-.55, 1.72, s * .5); knight.add(e); });
+    stage.add(knight);
+    /* gears */
+    const gears = [], gear = (x, y, R, teeth, mat, speed, th = .22) => { const m = mesh(gearGeo(R, teeth, th, R * .2, .4), mat); m.position.set(x, y, -3 + Math.random() * .4); m.userData = { sp: speed, ph: Math.random() }; root.add(m); gears.push(m); return m; };
+    const pair = (x, y, R1, t1, ang, R2, t2, sp, mats) => { gear(x, y, R1, t1, mats[0], sp); const d = R1 + R2 + .33; const g2 = gear(x + Math.cos(ang) * d, y + Math.sin(ang) * d, R2, t2, mats[1], -sp * R1 / R2); g2.rotation.z = Math.PI / t2; };
+    pair(-7.6, 3.1, 1.1, 12, -.9, .65, 7, .14, [M.gold, M.deep]);
+    pair(-7.4, -3.7, .95, 10, .25, .55, 6, -.16, [M.deep, M.gold]);
+    gear(8.4, -4, .9, 9, M.gold, -.12); gear(-1.4, 4.9, .5, 8, M.gold, -.25);
+    const floaty = decor(root, 10, [8, 4]);
+    return { root, baseBlur: 0,
+      update(t, dt) { knight.rotation.y = t * .35; knight.position.y = .5 + Math.sin(t * .8) * .04; gears.forEach(g => g.rotation.z += g.userData.sp * dt); floaty(t); },
+      enter() {}, setStep() {} };
+  })();
+
+  /* ---- 5 · glass magnifier over glass bar chart ---- */
+  worlds[4] = (() => {
+    const root = mk(4), chart = new THREE.Group(); chart.position.set(0, -3.3, 0); chart.scale.setScalar(.8); root.add(chart);
+    const plate = mesh(roundedBox(5.4, .14, 2.2, .05), M.gold); plate.position.y = -.08; chart.add(plate);
+    const hs = [1.2, 2.0, 1.55, 2.5, 1.9], mats = [M.amber, M.pink, M.honey, M.glass, M.amber], bars = [];
+    hs.forEach((h, i) => { const b = mesh(roundedBox(.72, h, .95, .12), mats[i]); b.position.set((i - 2) * 1.0, h / 2, 0); b.userData = { h, y0: h / 2, ph: i * .8 }; chart.add(b); bars.push(b); });
+    const mag = new THREE.Group(); root.add(mag);
+    const lens = mesh(new THREE.SphereGeometry(1, 56, 40), phys({ color: 0xffffff, roughness: 0, transmission: 1, thickness: .9, ior: 1.25, clearcoat: 1, envMapIntensity: 1.6, attenuationColor: new THREE.Color(0xFFE9C4), attenuationDistance: 5 })); lens.scale.set(1, 1, .22); mag.add(lens);
+    mag.add(mesh(new THREE.TorusGeometry(1.04, .1, 20, 90), M.gold));
+    const hnd = new THREE.Group(); hnd.rotation.z = Math.PI * .75; mag.add(hnd);
+    const neck = mesh(new THREE.CylinderGeometry(.07, .07, .4, 20), M.gold); neck.position.y = 1.2; hnd.add(neck); const grip = mesh(new THREE.CylinderGeometry(.14, .12, 1.3, 28), M.amber); grip.position.y = 1.95; hnd.add(grip);
+    const cap = mesh(new THREE.SphereGeometry(.15, 20, 14), M.gold); cap.position.y = 2.62; hnd.add(cap);
+    mag.scale.setScalar(.74);
+    const floaty = decor(root, 12, [8, 4.2]); let off = { x: 0 };
+    return { root, baseBlur: 0,
+      update(t) { bars.forEach(b => { const s = 1 + .05 * Math.sin(t * .9 + b.userData.ph); b.scale.y = s; b.position.y = b.userData.y0 * s; });
+        mag.position.set(off.x + Math.sin(t * .5) * .4, -1.5 + Math.sin(t * .8) * .2, 1.3); mag.rotation.z = Math.sin(t * .4) * .12; mag.rotation.y = Math.sin(t * .3) * .18; floaty(t); },
+      enter() { off.x = 0; }, setStep(n) { gsap.to(off, { x: n === 1 ? -.6 : n === 2 ? .6 : 0, duration: 1.6, ease: 'power3.inOut' }); } };
+  })();
+
+  /* ---- 6 · glass bulb with liquid gold + stairs + rising arrows ---- */
+  worlds[5] = (() => {
+    const root = mk(5), bulb = new THREE.Group(); bulb.position.set(-3.9, -.95, 0); bulb.scale.setScalar(.95); root.add(bulb);
+    const R = 1.3, cy = 1.9, prof = [new THREE.Vector2(.5, 0), new THREE.Vector2(.52, .3)]; const a0 = Math.asin((.75 - cy) / R);
+    for (let i = 0; i <= 40; i++) { const a = a0 + (Math.PI / 2 - a0) * i / 40; prof.push(new THREE.Vector2(Math.max(.001, R * Math.cos(a)), cy + R * Math.sin(a))); }
+    bulb.add(mesh(new THREE.LatheGeometry(prof, 72), phys({ color: 0xffffff, roughness: .02, transmission: 1, thickness: .7, ior: 1.45, clearcoat: 1, envMapIntensity: 1.5, attenuationColor: new THREE.Color(0xFFE9C4), attenuationDistance: 4, side: THREE.FrontSide })));
+    const plane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0), liqM = M.liquid.clone(); liqM.clippingPlanes = [plane];
+    const lq = []; const r2 = 1.12; for (let i = 0; i <= 36; i++) { const a = -1.2 + (Math.PI / 2 + 1.2) * i / 36; lq.push(new THREE.Vector2(Math.max(.001, r2 * Math.cos(a)), cy + r2 * Math.sin(a))); }
+    const liquid = mesh(new THREE.LatheGeometry(lq, 64), liqM); bulb.add(liquid);
+    const fil = mesh(new THREE.TorusKnotGeometry(.28, .035, 120, 8, 2, 3), M.liquid); fil.position.y = cy + .1; bulb.add(fil);
+    const capP = []; for (let k = 0; k < 6; k++) { const y = -.05 - k * .17; capP.push(new THREE.Vector2(.5, y), new THREE.Vector2(.58, y - .06), new THREE.Vector2(.5, y - .13)); }
+    capP.push(new THREE.Vector2(.45, -1.1), new THREE.Vector2(.22, -1.2), new THREE.Vector2(.001, -1.22)); bulb.add(mesh(new THREE.LatheGeometry(capP, 48), M.gold));
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xFFC463, transparent: true, opacity: .55, depthWrite: false })); halo.scale.setScalar(7); halo.position.y = cy; halo.renderOrder = -1; bulb.add(halo);
+    /* stairs */
+    const stairs = new THREE.Group(); stairs.position.set(-6.2, -3.7, -.6); root.add(stairs); const sm = [M.pink, M.honey, M.amber, M.glass, M.pink], steps = [];
+    for (let i = 0; i < 5; i++) { const h = .5 + i * .42, b = mesh(roundedBox(1.0, h, 1.4, .1), sm[i]); b.position.set(i * 1.05, h / 2, 0); stairs.add(b); steps.push(b); }
+    /* arrows */
+    const ag = arrowGeo(), arrows = []; [[-7.0, .5], [-0.9, .2], [-1.9, .75], [-7.3, 1.4]].forEach(([x, ph], i) => { const a = mesh(ag, i % 2 ? M.gold : M.deep); a.scale.setScalar(.38 + i % 2 * .12); a.userData = { x, ph }; root.add(a); arrows.push(a); });
+    const floaty = decor(root, 12, [8, 4.2]); let lvTween = null;
+    const setLevel = (n, instant) => { const v = [.12, .38, .62, .85, 1][n]; lvTween && lvTween.kill(); lvTween = gsap.to(this_lv, { v, duration: instant ? 0 : 1.4, ease: 'power2.out' }); };
+    const this_lv = { v: .12 }; const wp = new THREE.Vector3();
+    return { root, baseBlur: 0,
+      update(t) { bulb.position.y = -.95 + Math.sin(t * .8) * .12; bulb.rotation.y = Math.sin(t * .4) * .25; fil.rotation.y = t * 1.2; halo.material.opacity = .4 + .15 * Math.sin(t * 2);
+        bulb.getWorldPosition(wp); plane.constant = wp.y + (cy - r2 + this_lv.v * 2 * r2) * bulb.scale.y * root.scale.y;
+        arrows.forEach(a => { const k = ((t * .12 + a.userData.ph) % 1); a.position.set(a.userData.x, -3.2 + k * 5, -.5); a.material.opacity = 1; a.scale.y = a.scale.x * Math.sin(k * Math.PI) * 1.2 + .05; a.rotation.y = Math.sin(t + a.userData.ph * 4) * .5; });
+        floaty(t); },
+      enter() { this_lv.v = .12; }, setStep(n, instant) { setLevel(n, instant); if (!instant) gsap.fromTo(halo.scale, { x: 5, y: 5 }, { x: 7, y: 7, duration: 1.2, ease: 'power2.out' }); } };
+  })();
+
+  /* ---- 7 · golden burst ---- */
+  worlds[6] = (() => {
+    const root = mk(6), burst = { v: 0 };
+    const nD = 80, dg = new THREE.SphereGeometry(1, 20, 14), drops = new THREE.InstancedMesh(dg, M.gold, nD), dd = [], dm = new THREE.Object3D(); root.add(drops);
+    for (let i = 0; i < nD; i++) { const th = rnd(0, 6.28), ph = Math.acos(rnd(-1, 1)); dd.push({ d: new THREE.Vector3(Math.sin(ph) * Math.cos(th) * 1.6, Math.sin(ph) * Math.sin(th), Math.cos(ph) * .8).normalize(), r: rnd(1.5, 8.5), s: rnd(.05, .24), p: rnd(0, 6.28) }); }
+    const nP = 700, pp = new Float32Array(nP * 3), pc = new Float32Array(nP * 3), pd = [], pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3)); pg.setAttribute('color', new THREE.BufferAttribute(pc, 3));
+    const cols = [new THREE.Color(0xE8A33D), new THREE.Color(0xFFE2A6), new THREE.Color(0xC97A1E), new THREE.Color(0xF3B8BE)];
+    for (let i = 0; i < nP; i++) { const th = rnd(0, 6.28), ph = Math.acos(rnd(-1, 1)); pd.push({ d: new THREE.Vector3(Math.sin(ph) * Math.cos(th) * 1.7, Math.sin(ph) * Math.sin(th), Math.cos(ph)).normalize(), r: rnd(1, 11), p: rnd(0, 6.28) }); cols[i % 4].toArray(pc, i * 3); }
+    const pts = new THREE.Points(pg, new THREE.PointsMaterial({ map: glowTex, size: .3, vertexColors: true, transparent: true, depthWrite: false, opacity: .95 })); pts.frustumCulled = false; root.add(pts);
+    const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xFFD27A, transparent: true, opacity: 0, depthWrite: false })); root.add(flash);
+    const orbs = [[-6, 2.6, -1, M.pink, .8], [6.3, -2.4, -1.5, M.amber, 1.0], [5.2, 3.2, -3, M.glass, .6], [-5.6, -3, -2, M.honey, .7]].map(([x, y, z, m, s]) => { const o = mesh(new THREE.SphereGeometry(s, 48, 32), m); o.position.set(x, y, z); o.userData = { y0: y, ph: x }; root.add(o); return o; });
+    return { root, baseBlur: 0,
+      update(t) { const e = burst.v;
+        for (let i = 0; i < nD; i++) { const o = dd[i]; const rr = o.r * e; dm.position.set(o.d.x * rr, o.d.y * rr + Math.sin(t * .6 + o.p) * .25 - (1 - e) * 0, o.d.z * rr * .6 - 1); dm.scale.setScalar(o.s * (.25 + .75 * Math.min(1, e * 4)) * (1 + .12 * Math.sin(t * 2 + o.p))); dm.updateMatrix(); drops.setMatrixAt(i, dm.matrix); } drops.instanceMatrix.needsUpdate = true;
+        for (let i = 0; i < nP; i++) { const o = pd[i], rr = o.r * e; pp[i * 3] = o.d.x * rr + Math.sin(t * .5 + o.p) * .2; pp[i * 3 + 1] = o.d.y * rr + Math.cos(t * .4 + o.p) * .2 - e * .4; pp[i * 3 + 2] = o.d.z * rr - 1; } pg.attributes.position.needsUpdate = true;
+        flash.material.opacity = Math.max(0, 1 - e * 1.6) * .9; flash.scale.setScalar(2 + e * 22);
+        orbs.forEach(o => { o.position.y = o.userData.y0 + Math.sin(t * .6 + o.userData.ph) * .3; }); },
+      enter() { burst.v = 0; gsap.to(burst, { v: 1, duration: 3.6, ease: 'power3.out', delay: .35 }); }, setStep() {} };
+  })();
+
+  /* ---------- layout / resize ---------- */
+  const proj = new THREE.Vector3();
+  function layout() {
+    const w = innerWidth, h = innerHeight, aspect = w / h; renderer.setSize(w, h, false); camera.aspect = aspect; camera.fov = cam.fov; camera.updateProjectionMatrix();
+    const portrait = aspect < 1;
+    const fit = portrait ? Math.min(1, aspect * 1.7 / (16 / 9)) * .6 : Math.min(1, aspect / (16 / 9));
+    worlds.forEach(wd => { wd.root.scale.setScalar(Math.max(.3, fit)); wd.root.position.y = portrait ? (wd === worlds[0] ? -1.6 : 2.2) : 0; });
+    const bs = new THREE.Vector2(); renderer.getDrawingBufferSize(bs); bokeh.uniforms.uScale.value = bs.y / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)));
+  }
+  addEventListener('resize', layout); layout();
+  addEventListener('pointermove', e => { pointer.x = e.clientX / innerWidth * 2 - 1; pointer.y = e.clientY / innerHeight * 2 - 1; });
+
+  /* ---------- timeline tags tracking (slide 1) ---------- */
+  const tagEls = $$('#s1 .tag');
+  function trackTags() {
+    const w1 = worlds[0]; if (!$('#s1').classList.contains('active') && !w1.root.visible) return;
+    tagEls.forEach((el, j) => { const o = w1.tags[j]; o.getWorldPosition(proj); proj.y -= .62 * w1.root.scale.y; proj.project(camera);
+      const x = (proj.x * .5 + .5) * innerWidth, y = (-proj.y * .5 + .5) * innerHeight; el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,0)`; });
+  }
+
+  /* ---------- loop ---------- */
+  const clock = new THREE.Clock(); let last = 0;
+  renderer.setAnimationLoop(() => {
+    const t = clock.getElapsedTime(), dt = Math.min(.05, t - last); last = t;
+    pointer.sx += (pointer.x - pointer.sx) * .04; pointer.sy += (pointer.y - pointer.sy) * .04;
+    camera.position.set(cam.x + pointer.sx * .5, cam.y - pointer.sy * .3 + Math.sin(t * .3) * .12, cam.z); camera.lookAt(cam.x, 0, 0);
+    if (Math.abs(camera.fov - cam.fov) > .01) { camera.fov = cam.fov; camera.updateProjectionMatrix(); }
+    bokeh.uniforms.uTime.value = t; bokeh.uniforms.uCamX.value = cam.x;
+    worlds.forEach(w => { if (w.root.visible) w.update(t, dt); });
+    trackTags(); renderer.render(scene, camera);
+  });
+
+  return { worlds, THREE,
+    setVisible(set) { worlds.forEach((w, i) => { w.root.visible = set.includes(i); }); },
+    applyBlur(b) { canvas.style.filter = b > .3 ? `blur(${b.toFixed(1)}px)` : 'none'; } };
+}
+
+/* ---------------------------------------------------------------------
+   Navigation / transitions
+   --------------------------------------------------------------------- */
+let step = 0, busy = false;
+const hud = $('#cur'), hint = $('#hint');
+const worldOf = i => engine && engine.worlds[i];
+const camX = i => i * SPACING;
+function setBlur(b) { fx.blur = b; engine && engine.applyBlur(b); }
+
+function revealStep(i, n, instant) {
+  $$(`[data-step="${n}"]`, slides[i]).forEach(el => {
+    gsap.killTweensOf(el);
+    if (instant) gsap.set(el, { autoAlpha: 1, y: 0, scale: 1, filter: 'none' });
+    else gsap.fromTo(el, { autoAlpha: 0, y: 26, scale: .95, filter: 'blur(12px)' }, { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1, ease: 'power3.out', clearProps: 'filter' });
+  });
+  const w = worldOf(i); w && w.setStep(n, instant);
+}
+function showSlide(i, { all = false, delay = 0 } = {}) {
+  const s = slides[i]; s.classList.add('active');
+  const kids = [...s.children]; gsap.killTweensOf(kids); gsap.set(kids, { clearProps: 'all' });
+  $$('[data-step]', s).forEach(el => { gsap.killTweensOf(el); gsap.set(el, { autoAlpha: 0 }); });
+  gsap.fromTo($$('.in', s), { autoAlpha: 0, y: 38, scale: .97, filter: 'blur(14px)' }, { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.3, ease: 'power3.out', stagger: .13, delay, clearProps: 'filter' });
+  const w = worldOf(i); w && w.enter();
+  if (i === 1) requestAnimationFrame(fitTree);
+  step = 0;
+  if (all) { for (let n = 1; n <= stepsOf[i]; n++) revealStep(i, n, true); step = stepsOf[i]; }
+}
+function setHud(i) { gsap.fromTo(hud, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .8, ease: 'power2.out' }); hud.textContent = i + 1; }
+
+function goTo(next, back = false) {
+  if (busy || next < 0 || next >= N || next === current) return;
+  busy = true; hint.style.opacity = 0;
+  const from = current, old = slides[from], dur = 1.9;
+  engine && engine.setVisible([from, next]);
+  const baseFrom = (worldOf(from) || {}).baseBlur || 0, baseTo = (worldOf(next) || {}).baseBlur || 0;
+  const sweep = $('#sweep'), veil = $('#veil');
+  const tl = gsap.timeline({ onComplete() { busy = false; } });
+  /* text out */
+  tl.to([...old.children], { autoAlpha: 0, scale: back ? .96 : 1.06, filter: 'blur(18px)', duration: .75, ease: 'power2.in' }, 0);
+  tl.add(() => { old.classList.remove('active'); gsap.set([...old.children], { clearProps: 'all' }); }, .78);
+  /* 3D camera travel: dolly-in + blur, cut to next scene, settle */
+  tl.to(cam, { x: camX(next), duration: dur, ease: 'power3.inOut' }, 0);
+  tl.to(cam, { z: 8.8, fov: 38, duration: dur * .45, ease: 'power2.in' }, 0).to(cam, { z: 14, fov: 32, duration: dur * .55, ease: 'power2.out' }, dur * .45);
+  tl.to(cam, { y: back ? -1 : 1, duration: dur / 2, ease: 'sine.inOut' }, 0).to(cam, { y: 0, duration: dur / 2, ease: 'sine.inOut' }, dur / 2);
+  tl.to(fx, { blur: 18, duration: dur * .42, ease: 'power2.in', onUpdate: () => setBlur(fx.blur) }, 0).to(fx, { blur: baseTo, duration: dur * .58, ease: 'power2.out', onUpdate: () => setBlur(fx.blur) }, dur * .42);
+  /* cinematic light sweep + soft fade */
+  tl.fromTo(sweep, { x: back ? '120vw' : '-70vw', opacity: 1 }, { x: back ? '-70vw' : '120vw', duration: 1.25, ease: 'power2.inOut' }, dur * .22).set(sweep, { opacity: 0 }, dur * .22 + 1.26);
+  tl.to(veil, { opacity: .55, duration: dur * .4, ease: 'sine.in' }, dur * .1).to(veil, { opacity: 0, duration: dur * .5, ease: 'sine.out' }, dur * .5);
+  /* new scene */
+  tl.add(() => { current = next; setHud(next); showSlide(next, { all: back }); }, dur * .62);
+  tl.add(() => { engine && engine.setVisible([next]); }, dur + .05);
+  /* slide 1 sphere tags must follow the camera: hidden while travelling */
+}
+function next() {
+  if (busy) return;
+  if (step < stepsOf[current]) { step++; revealStep(current, step); }
+  else if (current < N - 1) goTo(current + 1);
+}
+function prev() { if (!busy && current > 0) goTo(current - 1, true); }
+
+/* ---------------------------------------------------------------------
+   Inputs
+   --------------------------------------------------------------------- */
+const editing = e => { const t = e.target; return t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)); };
+addEventListener('keydown', e => {
+  if (editing(e)) return;
+  if (['ArrowRight', ' ', 'PageDown', 'Enter'].includes(e.key)) { e.preventDefault(); next(); }
+  else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); prev(); }
+  else if (e.key === 'Home') goTo(0, true);
+  else if (e.key === 'End') goTo(N - 1);
+  else if (e.key === 'f' || e.key === 'F') { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
+});
+let wasEditing = false, swiped = 0;
+addEventListener('pointerdown', () => { const a = document.activeElement; wasEditing = !!(a && a.isContentEditable); }, true);
+addEventListener('click', e => {
+  if (performance.now() - swiped < 450) return;
+  if (e.target.closest('.card, .orgtools, button, a, [contenteditable]')) return;     // boxes are for typing, not for navigating
+  if (wasEditing) { wasEditing = false; return; }                                       // first click outside only leaves the edit mode
+  if (e.button === 0) next();
+});
+let tx = 0, ty = 0, tOK = false;
+addEventListener('touchstart', e => { tOK = !e.target.closest('.card'); tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+addEventListener('touchend', e => { if (!tOK) return; const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) { swiped = performance.now(); dx < 0 ? next() : prev(); } }, { passive: true });
+addEventListener('contextmenu', e => { if (!e.target.closest('[contenteditable]')) e.preventDefault(); });
+
+/* ---------------------------------------------------------------------
+   Boot
+   --------------------------------------------------------------------- */
+(async () => {
+  try { engine = await initEngine(); } catch (err) { console.warn('3D disabled:', err); engine = null; }
+  if (engine) { engine.setVisible([0]); cam.x = 0; setBlur(0); }
+  setHud(0); showSlide(0, { delay: .5 });
+  window.__deck = { next, prev, goTo, get state() { return { current, step, busy, steps: stepsOf, engine: !!engine }; } };
+})();
+</script>
+</body>
+</html>

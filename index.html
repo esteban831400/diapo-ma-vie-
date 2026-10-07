@@ -142,12 +142,36 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--cream);color:var
 .thanks .sp{display:inline-block;width:.32em}
 .sub{font-size:max(14px,calc(var(--u)*.26));letter-spacing:.5em;text-transform:uppercase;font-weight:300;margin-top:calc(var(--u)*.45);color:var(--choc)}
 
-/* HUD */
-#hud{position:fixed;left:0;right:0;bottom:max(14px,2.4vh);text-align:center;pointer-events:none;
-  font-size:max(11px,calc(var(--u)*.15));letter-spacing:.38em;color:rgba(74,44,32,.55);font-weight:300}
+/* HUD (prev / counter / next) */
+#hud{position:fixed;left:50%;bottom:max(6px,1.2vh);transform:translateX(-50%);z-index:30;display:flex;align-items:center;pointer-events:none;
+  font-size:max(11px,calc(var(--u)*.15));letter-spacing:.34em;color:rgba(74,44,32,.6);font-weight:300}
+#hud button{pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:.5em;height:max(36px,calc(var(--u)*.46));min-width:max(36px,calc(var(--u)*.46));
+  padding:0 .8em;background:none;border:0;border-radius:999px;color:inherit;font:inherit;letter-spacing:inherit;cursor:pointer;
+  transition:background .25s,color .25s,opacity .25s;-webkit-tap-highlight-color:transparent}
+#hud button:hover,#hud button:focus-visible{background:rgba(255,255,255,.65);color:var(--amber);outline:none}
+#hud button:disabled{opacity:.2;pointer-events:none}
+#hud svg{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 #hud b{font-weight:400;color:var(--amber)}
-#hint{position:fixed;left:0;right:0;bottom:max(34px,5.2vh);text-align:center;pointer-events:none;font-size:max(10px,calc(var(--u)*.12));
-  letter-spacing:.3em;text-transform:uppercase;color:rgba(74,44,32,.4);transition:opacity 1s}
+#hint{position:fixed;left:0;right:0;bottom:max(46px,6.6vh);z-index:25;text-align:center;pointer-events:none;padding:0 12px;
+  font-size:max(10px,calc(var(--u)*.12));letter-spacing:.3em;text-transform:uppercase;color:rgba(74,44,32,.45);transition:opacity 1s}
+
+/* slide menu */
+#menu{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:0 4vw 6vh;
+  background:rgba(255,246,234,.42);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .45s,visibility .45s}
+#menu.open{opacity:1;visibility:visible;pointer-events:auto}
+.menu-panel{--g:calc(var(--u)*.2);width:min(94vw,calc(var(--u)*13.6));padding:calc(var(--u)*.42) calc(var(--u)*.5) calc(var(--u)*.5);text-align:center;
+  transform:translateY(16px) scale(.98);transition:transform .55s cubic-bezier(.2,.8,.2,1)}
+#menu.open .menu-panel{transform:none}
+.menu-title{font-size:var(--fs-small);letter-spacing:.42em;text-transform:uppercase;color:var(--amber);font-weight:400;margin-bottom:calc(var(--u)*.3)}
+.menu-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--g)}
+.menu-item{flex:0 0 calc((100% - 3*var(--g))/4);display:flex;flex-direction:column;align-items:flex-start;gap:calc(var(--u)*.08);text-align:left;cursor:pointer;
+  min-height:calc(var(--u)*1.45);padding:calc(var(--u)*.22) calc(var(--u)*.26);font:inherit;color:var(--choc);
+  background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.85);border-radius:calc(var(--u)*.18);
+  transition:transform .3s,box-shadow .3s,background .3s,border-color .3s;-webkit-tap-highlight-color:transparent}
+.menu-item:hover,.menu-item:focus-visible{transform:translateY(-3px);background:rgba(255,255,255,.88);outline:none;box-shadow:0 calc(var(--u)*.18) calc(var(--u)*.45) rgba(201,122,30,.22)}
+.menu-item.cur{border-color:var(--honey);box-shadow:inset 0 0 0 1px var(--honey)}
+.mi-n{font-family:var(--serif);font-size:max(15px,calc(var(--u)*.3));color:var(--amber);line-height:1}
+.mi-t{font-size:max(11px,calc(var(--u)*.15));line-height:1.35;color:rgba(74,44,32,.88)}
 #noWebgl{display:none;position:fixed;top:10px;left:10px;font-size:11px;opacity:.5}
 
 @media (max-aspect-ratio:1/1){
@@ -159,6 +183,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--cream);color:var
   .f5 .stylebox{margin-top:26vh}.f3 .blocks{margin-top:34vh}.f6 .cards{margin-top:34vh}.f5 .col{margin-top:10px}
   #orgWrap{position:static;margin-top:20px;height:62vh;justify-content:center}
   .tag{width:30vw}
+  .menu-item{flex-basis:calc((100% - var(--g))/2)}
 }
 </style>
 </head>
@@ -169,8 +194,13 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--cream);color:var
 <div id="slides"></div>
 <div id="veil"></div>
 <div id="sweep"></div>
-<div id="hint">Click · → · Space to continue</div>
-<div id="hud"><b id="cur">1</b> / <span id="tot">7</span></div>
+<div id="menu" aria-hidden="true"><div class="menu-panel glass"><div class="menu-title"></div><div class="menu-grid"></div></div></div>
+<div id="hint"></div>
+<nav id="hud" aria-label="Slide navigation">
+  <button type="button" id="prevBtn" aria-label="Previous slide" title="Previous slide (←)"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button type="button" id="menuBtn" aria-label="All slides" title="All slides (M)"><b id="cur">1</b><span>/</span><span id="tot">7</span></button>
+  <button type="button" id="nextBtn" aria-label="Next slide" title="Next slide (→)"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+</nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script type="importmap">
@@ -267,7 +297,13 @@ const CONTENT = {
       { title: "Grow the talents", text: "Offer a training budget and mentoring to prepare future team leaders." }
     ]
   },
-  s7: { title: "Thank you", subtitle: "Any questions?" }
+  s7: { title: "Thank you", subtitle: "Any questions?" },
+  // small navigation texts
+  ui: {
+    hint: "Click or → to continue · M to jump to a slide",
+    lastHint: "← to go back · click the counter (or press M) to jump to any slide",
+    menuTitle: "Jump to a slide"
+  }
 };
 
 /* ===================================================================== */
@@ -707,8 +743,9 @@ async function initEngine() {
 /* ---------------------------------------------------------------------
    Navigation / transitions
    --------------------------------------------------------------------- */
-let step = 0, busy = false;
-const hud = $('#cur'), hint = $('#hint');
+let step = 0, busy = false, pending = null;       // pending = slide asked for while a transition is running
+const hud = $('#cur'), hint = $('#hint'), UI = C.ui;
+hint.textContent = UI.hint;
 const worldOf = i => engine && engine.worlds[i];
 const camX = i => i * SPACING;
 function setBlur(b) { fx.blur = b; engine && engine.applyBlur(b); }
@@ -731,16 +768,22 @@ function showSlide(i, { all = false, delay = 0 } = {}) {
   step = 0;
   if (all) { for (let n = 1; n <= stepsOf[i]; n++) revealStep(i, n, true); step = stepsOf[i]; }
 }
-function setHud(i) { gsap.fromTo(hud, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .8, ease: 'power2.out' }); hud.textContent = i + 1; }
+function setHud(i) {
+  gsap.fromTo(hud, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .8, ease: 'power2.out' }); hud.textContent = i + 1;
+  $('#prevBtn').disabled = i === 0; $('#nextBtn').disabled = i === N - 1;
+  $$('.menu-item').forEach((b, k) => b.classList.toggle('cur', k === i));
+  try { history.replaceState(null, '', i === 0 ? location.pathname + location.search : '#' + (i + 1)); } catch (e) {}   // lets a reload / bookmark land on the same slide
+}
+function flashHint(text, ms = 7000) { hint.textContent = text; hint.style.opacity = 1; clearTimeout(flashHint.t); flashHint.t = setTimeout(() => { hint.style.opacity = 0; }, ms); }
 
-function goTo(next, back = false) {
+function goTo(next, back = false, { all = back } = {}) {
   if (busy || next < 0 || next >= N || next === current) return;
   busy = true; hint.style.opacity = 0;
   const from = current, old = slides[from], dur = 1.9;
   engine && engine.setVisible([from, next]);
   const baseFrom = (worldOf(from) || {}).baseBlur || 0, baseTo = (worldOf(next) || {}).baseBlur || 0;
   const sweep = $('#sweep'), veil = $('#veil');
-  const tl = gsap.timeline({ onComplete() { busy = false; } });
+  const tl = gsap.timeline({ onComplete() { busy = false; if (pending !== null) { const p = pending; pending = null; jumpTo(p); } } });
   /* text out */
   tl.to([...old.children], { autoAlpha: 0, scale: back ? .96 : 1.06, filter: 'blur(18px)', duration: .75, ease: 'power2.in' }, 0);
   tl.add(() => { old.classList.remove('active'); gsap.set([...old.children], { clearProps: 'all' }); }, .78);
@@ -753,9 +796,8 @@ function goTo(next, back = false) {
   tl.fromTo(sweep, { x: back ? '120vw' : '-70vw', opacity: 1 }, { x: back ? '-70vw' : '120vw', duration: 1.25, ease: 'power2.inOut' }, dur * .22).set(sweep, { opacity: 0 }, dur * .22 + 1.26);
   tl.to(veil, { opacity: .55, duration: dur * .4, ease: 'sine.in' }, dur * .1).to(veil, { opacity: 0, duration: dur * .5, ease: 'sine.out' }, dur * .5);
   /* new scene */
-  tl.add(() => { current = next; setHud(next); showSlide(next, { all: back }); }, dur * .62);
+  tl.add(() => { current = next; setHud(next); showSlide(next, { all }); if (next === N - 1) flashHint(UI.lastHint); }, dur * .62);
   tl.add(() => { engine && engine.setVisible([next]); }, dur + .05);
-  /* slide 1 sphere tags must follow the camera: hidden while travelling */
 }
 function next() {
   if (busy) return;
@@ -763,29 +805,79 @@ function next() {
   else if (current < N - 1) goTo(current + 1);
 }
 function prev() { if (!busy && current > 0) goTo(current - 1, true); }
+/* jump straight to any slide (menu, number keys, Home / End): the slide is shown complete, ready for questions */
+function jumpTo(i) {
+  closeMenu();
+  if (!(i >= 0 && i < N)) return;
+  if (busy) { pending = i; return; }
+  if (i === current) { while (step < stepsOf[current]) { step++; revealStep(current, step); } return; }
+  goTo(i, i < current, { all: true });
+}
+
+/* slide menu (click the counter, or press M / Esc) */
+const menuEl = $('#menu'); let menuOpen = false;
+$('.menu-title', menuEl).textContent = UI.menuTitle;
+$('.menu-grid', menuEl).innerHTML = [C.s1, C.s2, C.s3, C.s4, C.s5, C.s6, C.s7].map((sl, i) =>
+  `<button type="button" class="menu-item" data-i="${i}"><span class="mi-n">0${i + 1}</span><span class="mi-t">${esc(sl.title)}</span></button>`).join('');
+function openMenu() {
+  if (menuOpen) return; menuOpen = true; menuEl.classList.add('open'); menuEl.setAttribute('aria-hidden', 'false');
+  $$('.menu-item', menuEl).forEach((b, k) => b.classList.toggle('cur', k === current));
+  gsap.fromTo($$('.menu-item', menuEl), { y: 18, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .55, ease: 'power3.out', stagger: .04, delay: .08 });
+  setTimeout(() => { const c = $('.menu-item.cur', menuEl); c && menuOpen && c.focus({ preventScroll: true }); }, 140);
+}
+function closeMenu() {
+  if (!menuOpen) return; menuOpen = false; menuEl.classList.remove('open'); menuEl.setAttribute('aria-hidden', 'true');
+  const a = document.activeElement; a && a.blur && a.blur();
+}
+const toggleMenu = () => menuOpen ? closeMenu() : openMenu();
+function moveMenuFocus(d) {
+  const items = $$('.menu-item', menuEl); let i = items.indexOf(document.activeElement); if (i < 0) i = current;
+  items[(i + d + items.length) % items.length].focus({ preventScroll: true });
+}
+menuEl.addEventListener('click', e => {
+  e.stopPropagation();
+  const b = e.target.closest('.menu-item');
+  if (b) jumpTo(+b.dataset.i); else if (!e.target.closest('.menu-panel')) closeMenu();
+});
+$('#hud').addEventListener('click', e => {
+  e.stopPropagation();
+  const b = e.target.closest('button'); if (!b) return; b.blur();
+  if (b.id === 'menuBtn') toggleMenu();
+  else { closeMenu(); b.id === 'prevBtn' ? prev() : next(); }
+});
 
 /* ---------------------------------------------------------------------
    Inputs
    --------------------------------------------------------------------- */
 const editing = e => { const t = e.target; return t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)); };
 addEventListener('keydown', e => {
-  if (editing(e)) return;
-  if (['ArrowRight', ' ', 'PageDown', 'Enter'].includes(e.key)) { e.preventDefault(); next(); }
-  else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); prev(); }
-  else if (e.key === 'Home') goTo(0, true);
-  else if (e.key === 'End') goTo(N - 1);
-  else if (e.key === 'f' || e.key === 'F') { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
+  if (editing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key, num = /^[1-9]$/.test(k) && +k <= N ? +k - 1 : -1;
+  if (menuOpen) {
+    if (k === 'Escape' || k === 'm' || k === 'M') { e.preventDefault(); closeMenu(); }
+    else if (num >= 0) { e.preventDefault(); jumpTo(num); }
+    else if (k.startsWith('Arrow')) { e.preventDefault(); moveMenuFocus(k === 'ArrowRight' || k === 'ArrowDown' ? 1 : -1); }
+    return;                                                  // Enter / Space activate the focused slide natively
+  }
+  if ((k === ' ' || k === 'Enter') && e.target.closest && e.target.closest('button')) return;   // a focused button keeps its own behaviour
+  if (['ArrowRight', ' ', 'PageDown', 'Enter'].includes(k)) { e.preventDefault(); next(); }
+  else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); prev(); }
+  else if (num >= 0) { e.preventDefault(); jumpTo(num); }        // 1 … 7 : show that slide
+  else if (k === 'Home') jumpTo(0);
+  else if (k === 'End') jumpTo(N - 1);
+  else if (k === 'Escape' || k === 'm' || k === 'M') { e.preventDefault(); openMenu(); }
+  else if (k === 'f' || k === 'F') { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
 });
 let wasEditing = false, swiped = 0;
 addEventListener('pointerdown', () => { const a = document.activeElement; wasEditing = !!(a && a.isContentEditable); }, true);
 addEventListener('click', e => {
-  if (performance.now() - swiped < 450) return;
-  if (e.target.closest('.card, .orgtools, button, a, [contenteditable]')) return;     // boxes are for typing, not for navigating
+  if (performance.now() - swiped < 450 || menuOpen) return;
+  if (e.target.closest('.card, .orgtools, button, a, [contenteditable], #hud, #menu')) return;     // boxes are for typing, not for navigating
   if (wasEditing) { wasEditing = false; return; }                                       // first click outside only leaves the edit mode
   if (e.button === 0) next();
 });
 let tx = 0, ty = 0, tOK = false;
-addEventListener('touchstart', e => { tOK = !e.target.closest('.card'); tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+addEventListener('touchstart', e => { tOK = !menuOpen && !e.target.closest('.card, #hud, #menu'); tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
 addEventListener('touchend', e => { if (!tOK) return; const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
   if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) { swiped = performance.now(); dx < 0 ? next() : prev(); } }, { passive: true });
 addEventListener('contextmenu', e => { if (!e.target.closest('[contenteditable]')) e.preventDefault(); });
@@ -795,9 +887,13 @@ addEventListener('contextmenu', e => { if (!e.target.closest('[contenteditable]'
    --------------------------------------------------------------------- */
 (async () => {
   try { engine = await initEngine(); } catch (err) { console.warn('3D disabled:', err); engine = null; }
-  if (engine) { engine.setVisible([0]); cam.x = 0; setBlur(0); }
-  setHud(0); showSlide(0, { delay: .5 });
-  window.__deck = { next, prev, goTo, get state() { return { current, step, busy, steps: stepsOf, engine: !!engine }; } };
+  const h = parseInt(location.hash.slice(1), 10), start = h >= 1 && h <= N ? h - 1 : 0;      // e.g. index.html#5 opens slide 5
+  current = start; cam.x = camX(start);
+  if (engine) { engine.setVisible([start]); setBlur((worldOf(start) || {}).baseBlur || 0); }
+  setHud(start); showSlide(start, { delay: .5, all: start > 0 });
+  if (start === N - 1) flashHint(UI.lastHint);
+  addEventListener('hashchange', () => { const n = parseInt(location.hash.slice(1), 10); if (n >= 1 && n <= N && n - 1 !== current) jumpTo(n - 1); });
+  window.__deck = { next, prev, goTo, jumpTo, openMenu, closeMenu, get state() { return { current, step, busy, menu: menuOpen, steps: stepsOf, engine: !!engine }; } };
 })();
 </script>
 </body>

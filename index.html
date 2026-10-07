@@ -199,10 +199,6 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--stone);color:var
 .mi-n{font-family:var(--serif);font-size:max(15px,calc(var(--u)*.3));color:var(--ochre-ink);line-height:1}
 .mi-t{font-size:max(11px,calc(var(--u)*.15));line-height:1.35;color:rgba(14,77,100,.9)}
 
-/* export mode: only the canvas stays */
-html.export,html.export body{background:transparent}
-html.export body>*:not(#gl){display:none!important}
-
 @media (max-aspect-ratio:1/1){
   :root{--u:11.111vw;--fs-body:15px;--fs-small:12px}
   .frame{width:100vw;height:100vh;height:100dvh;overflow-y:auto;overflow-x:hidden;padding:56px 22px 70px;pointer-events:auto;justify-content:flex-start}
@@ -343,13 +339,6 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const N = 7, SPACING = 70;
-/* EXPORT MODE (?export or ?export=3): shows ONLY the 3D background (no text, no org chart, no slide counter).
-   Every animation is then snapped to a whole number of cycles per LOOP_T seconds, so a LOOP_T-second video of it loops seamlessly.
-   tools/export-canva.mjs drives this mode to produce the PNG + MP4 files of the export-canva folder. */
-const EXPORT = new URLSearchParams(location.search).has('export');
-const LOOP_T = 8, TAU = Math.PI * 2;
-/** angular speed (rad/s) of an animation: unchanged normally; in export mode snapped to n whole cycles per loop (n given, or the nearest) */
-const om = (rad, n) => EXPORT ? TAU * (n ?? Math.max(1, Math.round(rad * LOOP_T / TAU))) / LOOP_T : rad;
 
 /* ---------------------------------------------------------------------
    Slides (HTML)
@@ -469,8 +458,8 @@ async function initEngine() {
   const PAL = { turq: '#2BB3A8', turqD: '#1E8C8A', deep: '#0E4D64', stone: '#F2EBDD', ochre: '#C88A4B', pine: '#5E7F4A' };
 
   const canvas = $('#gl');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: EXPORT });
-  renderer.setPixelRatio(EXPORT ? 1 : Math.min(devicePixelRatio || 1, 2));
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.toneMapping = THREE.NoToneMapping;                 // brand colours stay true
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
@@ -526,51 +515,41 @@ async function initEngine() {
 
   /* ---------- water (turquoise, gently rippling) ---------- */
   const U = { time: { value: 0 } };
-  /* wave speeds (rad/s) and caustic speeds: smooth values normally, whole cycles per loop in export mode */
-  const WS = EXPORT ? [om(.6, 1), om(.8, 1), om(1.1, 1), om(1.5, 2)] : [.6, .8, 1.1, 1.5];
-  const CAUS_OM = EXPORT ? [-2, -1, 0, 0].map(n => TAU * n / LOOP_T) : [-1.25, -.375, -.08333, .0625];
-  const CAUS_OM2 = EXPORT ? CAUS_OM : [-1.125, -.3375, -.075, .05625];
-  const DITHER = 'gl_FragColor.rgb+=(fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453)-.5)/255.0;';   // hides banding in smooth gradients
   const GLSL_WAVES = `
-    uniform vec4 uWS;
     float wH(vec2 p,float t){
-      return .50*sin(dot(p,vec2(.80,.60))*1.10+t*uWS.x)+.30*sin(dot(p,vec2(-.40,.92))*1.90+t*uWS.y)
-            +.20*sin(dot(p,vec2(.95,-.30))*3.10+t*uWS.z)+.10*sin(dot(p,vec2(.20,.98))*5.30+t*uWS.w); }
+      return .50*sin(dot(p,vec2(.80,.60))*1.10+t*.60)+.30*sin(dot(p,vec2(-.40,.92))*1.90+t*.80)
+            +.20*sin(dot(p,vec2(.95,-.30))*3.10+t*1.10)+.10*sin(dot(p,vec2(.20,.98))*5.30+t*1.50); }
     vec2 wG(vec2 p,float t){
-      return .55*cos(dot(p,vec2(.80,.60))*1.10+t*uWS.x)*vec2(.80,.60)+.57*cos(dot(p,vec2(-.40,.92))*1.90+t*uWS.y)*vec2(-.40,.92)
-            +.62*cos(dot(p,vec2(.95,-.30))*3.10+t*uWS.z)*vec2(.95,-.30)+.53*cos(dot(p,vec2(.20,.98))*5.30+t*uWS.w)*vec2(.20,.98); }
-    float tH(vec2 p,float t){
-      return .50*sin(dot(p,vec2(.80,.60))*1.10+t)+.30*sin(dot(p,vec2(-.40,.92))*1.90+t*1.33)
-            +.20*sin(dot(p,vec2(.95,-.30))*3.10+t*1.83)+.10*sin(dot(p,vec2(.20,.98))*5.30+t*2.50); }`;
+      return .55*cos(dot(p,vec2(.80,.60))*1.10+t*.60)*vec2(.80,.60)+.57*cos(dot(p,vec2(-.40,.92))*1.90+t*.80)*vec2(-.40,.92)
+            +.62*cos(dot(p,vec2(.95,-.30))*3.10+t*1.10)*vec2(.95,-.30)+.53*cos(dot(p,vec2(.20,.98))*5.30+t*1.50)*vec2(.20,.98); }`;
   const GLSL_CAUSTIC = `
-    float caustic(vec2 uv,float time,vec4 om){
+    float caustic(vec2 uv,float time){
       const float TAU=6.28318530718;
       vec2 p=mod(uv*TAU,TAU)-250.0; vec2 i=p; float c=1.0; const float inten=.005;
-      for(int n=0;n<4;n++){ float t=time*om[n]; i=p+vec2(cos(t-i.x)+sin(t+i.y),sin(t-i.y)+cos(t+i.x));
+      for(int n=0;n<4;n++){ float t=time*(1.0-(3.5/float(n+1))); i=p+vec2(cos(t-i.x)+sin(t+i.y),sin(t-i.y)+cos(t+i.x));
         c+=1.0/length(vec2(p.x/(sin(i.x+t)/inten),p.y/(cos(i.y+t)/inten))); }
       c/=4.0; c=1.17-pow(c,1.4); return pow(abs(c),8.0); }`;
   const waveJS = (x, z, t) => { let h = 0, gx = 0, gz = 0;
-    [[.8, .6, 1.1, WS[0], .5], [-.4, .92, 1.9, WS[1], .3], [.95, -.3, 3.1, WS[2], .2], [.2, .98, 5.3, WS[3], .1]].forEach(([dx, dz, k, w, a]) => { const ph = (x * dx + z * dz) * k + t * w; h += a * Math.sin(ph); gx += a * k * Math.cos(ph) * dx; gz += a * k * Math.cos(ph) * dz; });
+    [[.8, .6, 1.1, .6, .5], [-.4, .92, 1.9, .8, .3], [.95, -.3, 3.1, 1.1, .2], [.2, .98, 5.3, 1.5, .1]].forEach(([dx, dz, k, w, a]) => { const ph = (x * dx + z * dz) * k + t * w; h += a * Math.sin(ph); gx += a * k * Math.cos(ph) * dx; gz += a * k * Math.cos(ph) * dz; });
     return { h, gx, gz }; };
   const WATER_VS = `uniform float uTime,uAmp,uScale; varying vec3 vW; varying vec2 vL; ${GLSL_WAVES}
     void main(){ vec3 p=position; vL=p.xz; p.y+=wH(p.xz*uScale,uTime)*uAmp; vec4 w=modelMatrix*vec4(p,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`;
-  const WATER_FS = `uniform float uTime,uAmp,uScale,uFres,uSunPow,uSunI,uCaus,uAlpha,uSkyK,uTW;
-    uniform vec4 uCOm; uniform vec3 uDeep,uShallow,uSkyLow,uSkyHigh,uSunDir,uSunCol; uniform vec4 uShore; varying vec3 vW; varying vec2 vL;
+  const WATER_FS = `uniform float uTime,uAmp,uScale,uFres,uSunPow,uSunI,uCaus,uAlpha,uSkyK;
+    uniform vec3 uDeep,uShallow,uSkyLow,uSkyHigh,uSunDir,uSunCol; uniform vec4 uShore; varying vec3 vW; varying vec2 vL;
     ${GLSL_WAVES} ${GLSL_CAUSTIC}
     void main(){
       vec2 p=vL*uScale; vec2 g=wG(p,uTime)*uAmp*uScale; vec3 n=normalize(vec3(-g.x,1.0,-g.y));
       vec3 V=normalize(cameraPosition-vW); float ndv=clamp(dot(n,V),0.0,1.0); float fr=clamp(uFres*pow(1.0-ndv,3.5),0.0,1.0);
       float near=1.0-smoothstep(uShore.z*.25,uShore.z,distance(vL,uShore.xy));
-      float tone=clamp(.30+.34*tH(p*.23+3.0,uTime*uTW)+near*uShore.w,0.0,1.0);
+      float tone=clamp(.30+.34*wH(p*.23+3.0,uTime*.15)+near*uShore.w,0.0,1.0);
       vec3 body=mix(uDeep,uShallow,tone);
       vec3 R=reflect(-V,n); vec3 sky=mix(uSkyLow,uSkyHigh,smoothstep(0.0,uSkyK,R.y));
       vec3 c=mix(body,sky,fr);
       float sd=max(dot(R,normalize(uSunDir)),0.0); c+=uSunCol*(pow(sd,uSunPow)*uSunI+pow(sd,14.0)*uSunI*.06);
-      c+=vec3(1.0)*caustic(vL*.22,uTime,uCOm)*uCaus;
+      c+=vec3(1.0)*caustic(vL*.22,uTime*.5)*uCaus;
       gl_FragColor=vec4(c,uAlpha);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
-      ${DITHER}
     }`;
   function waterMesh({ w = 100, d = 100, sx = 80, sz = 80, y = 0, z = 0, amp = .1, scale = 1, deep = PAL.turqD, shallow = PAL.turq, skyLow = '#EAF3EC', skyHigh = '#CFE9E3',
     fres = .55, sunDir = [-.4, .5, -.8], sunCol = '#FFF6E0', sunPow = 220, sunI = .5, caus = .15, shore = [0, 0, 1, 0], alpha = 1, skyK = .7 } = {}) {
@@ -578,7 +557,6 @@ async function initEngine() {
     const m = new THREE.ShaderMaterial({ transparent: alpha < 1, depthWrite: alpha >= 1, vertexShader: WATER_VS, fragmentShader: WATER_FS, uniforms: {
       uTime: U.time, uAmp: { value: amp }, uScale: { value: scale }, uDeep: { value: col(deep) }, uShallow: { value: col(shallow) }, uSkyLow: { value: col(skyLow) }, uSkyHigh: { value: col(skyHigh) },
       uSunDir: { value: new THREE.Vector3(...sunDir).normalize() }, uSunCol: { value: col(sunCol) }, uFres: { value: fres }, uSunPow: { value: sunPow }, uSunI: { value: sunI },
-      uWS: { value: new THREE.Vector4(...WS) }, uCOm: { value: new THREE.Vector4(...CAUS_OM) }, uTW: { value: EXPORT ? 0 : .09 },
       uCaus: { value: caus }, uSkyK: { value: skyK }, uShore: { value: new THREE.Vector4(...shore) }, uAlpha: { value: alpha } } });
     const mesh = new THREE.Mesh(g, m); mesh.position.y = y; mesh.frustumCulled = false; return mesh;
   }
@@ -595,7 +573,6 @@ async function initEngine() {
           gl_FragColor=vec4(c,1.0);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
-          ${DITHER}
         }` }));
     m.position.set(0, y, z); m.renderOrder = -100; m.frustumCulled = false; return m;
   }
@@ -701,19 +678,15 @@ async function initEngine() {
   /* 2 · calm turquoise water seen from above (very discreet, blurred by the page) */
   worlds[1] = (() => {
     const { root, stage, x } = mkWorld(1);
-    const mat = new THREE.ShaderMaterial({ depthWrite: false, uniforms: { uTime: U.time, uSize: { value: new THREE.Vector2(60, 34) }, uA: { value: col(PAL.turq) }, uB: { value: col(PAL.turqD) }, uBg: { value: col(PAL.stone) }, uStrength: { value: .5 },
-        uS: { value: new THREE.Vector2(EXPORT ? 0 : .18, EXPORT ? 0 : .22) }, uCOm: { value: new THREE.Vector4(...CAUS_OM2) } },
+    const mat = new THREE.ShaderMaterial({ depthWrite: false, uniforms: { uTime: U.time, uSize: { value: new THREE.Vector2(60, 34) }, uA: { value: col(PAL.turq) }, uB: { value: col(PAL.turqD) }, uBg: { value: col(PAL.stone) }, uStrength: { value: .5 } },
       vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-      fragmentShader: `uniform float uTime,uStrength; uniform vec2 uSize,uS; uniform vec4 uCOm; uniform vec3 uA,uB,uBg; varying vec2 vUv; ${GLSL_CAUSTIC}
-        void main(){ vec2 p=(vUv-.5)*uSize;
-          vec2 q=p+vec2(1.7*sin(p.y*.23+1.0)+.9*sin(p.y*.61),1.4*sin(p.x*.19)+.8*sin(p.x*.53+2.0));
-          float c=.62*caustic(q*.16,uTime,uCOm)+.5*caustic((mat2(.8,-.6,.6,.8)*q)*.105+vec2(7.3,2.1),uTime,uCOm*vec4(-1.0,1.0,1.0,1.0));
-          float t=.5+.28*sin(p.x*.22+p.y*.31+uTime*uS.x)+.22*sin(p.y*.52-p.x*.17-uTime*uS.y);
+      fragmentShader: `uniform float uTime,uStrength; uniform vec2 uSize; uniform vec3 uA,uB,uBg; varying vec2 vUv; ${GLSL_CAUSTIC}
+        void main(){ vec2 p=(vUv-.5)*uSize; float c=caustic(p*.16,uTime*.45);
+          float t=.5+.28*sin(p.x*.22+p.y*.31+uTime*.18)+.22*sin(p.y*.52-p.x*.17-uTime*.22);
           vec3 w=mix(uB,uA,clamp(t,0.0,1.0)); w+=vec3(1.0)*c*.5;
           gl_FragColor=vec4(mix(uBg,w,uStrength),1.0);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
-          ${DITHER}
         }` });
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(60, 34), mat); plane.position.set(0, 0, -6); plane.frustumCulled = false; root.add(plane);
     return { root, stage, pose: { y: 0, ly: 0 }, baseBlur: 4, update() {}, enter() {}, setStep() {} };
@@ -758,7 +731,7 @@ async function initEngine() {
     const ringGeo = new THREE.RingGeometry(.96, 1, 128), rings = []; ringGeo.rotateX(-Math.PI / 2);
     for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: i % 2 ? '#FFFFFF' : PAL.ochre, transparent: true, depthWrite: false })); m.position.set(vx, .025, zs + .1); tilt.add(m); rings.push(m); }
     return { root, stage, pose: { y: 0, ly: 0 }, baseBlur: 0,
-      update(t) { const rate = EXPORT ? 1 / LOOP_T : .16; rings.forEach((r, i) => { const k = (t * rate + i / 4) % 1; r.scale.setScalar(.15 + k * 3.8); r.material.opacity = (1 - k) * smooth(0, .08, k); }); tilt.rotation.z = Math.sin(t * om(.15)) * .012; },
+      update(t) { rings.forEach((r, i) => { const k = (t * .16 + i / 4) % 1; r.scale.setScalar(.15 + k * 3.8); r.material.opacity = (1 - k) * smooth(0, .08, k); }); tilt.rotation.z = Math.sin(t * .15) * .012; },
       enter() {}, setStep() {} };
   })();
 
@@ -771,7 +744,7 @@ async function initEngine() {
     const top = s => H * (.86 + .55 * s * s), bot = s => -D * (s < .5 ? 1 : 1 - Math.pow((s - .5) / .5, 1.7) * .88);
     const xc = (t, b) => b * (1 - Math.pow(1 - t, 2.2)), yc = (t, s) => bot(s) + (top(s) - bot(s)) * Math.pow(t, 1.12);
     const nS = 48, nT = 14, pos = [], uv = [], idx = [];
-    for (let i = 0; i <= nS; i++) { const s = i / nS; for (let k = 0; k <= 2 * nT; k++) { const t = Math.abs(k - nT) / nT, side = k < nT ? -1 : 1; pos.push((s - .5) * L - .42 * Math.pow(1 - t, 1.5) * smooth(.55, 1, s), yc(t, s), side * xc(t, half(s))); uv.push(s, t); } }
+    for (let i = 0; i <= nS; i++) { const s = i / nS; for (let k = 0; k <= 2 * nT; k++) { const t = Math.abs(k - nT) / nT, side = k < nT ? -1 : 1; pos.push((s - .5) * L, yc(t, s), side * xc(t, half(s))); uv.push(s, t); } }
     for (let i = 0; i < nS; i++) for (let k = 0; k < 2 * nT; k++) { const a = i * (2 * nT + 1) + k, c = a + 2 * nT + 1; idx.push(a, c, a + 1, a + 1, c, c + 1); }
     const hg = new THREE.BufferGeometry(); hg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); hg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); hg.setIndex(idx); hg.computeVertexNormals();
     const bandTex = (() => { const c = document.createElement('canvas'); c.width = 4; c.height = 256; const g = c.getContext('2d');
@@ -801,7 +774,7 @@ async function initEngine() {
     boat.traverse(m => { if (m.isMesh && m.castShadow === false) m.castShadow = true; });
     const holder = new THREE.Group(); holder.add(boat); holder.position.set(-3.5, 0, .5); holder.rotation.y = -.5; holder.scale.setScalar(1.45); stage.add(holder);
     return { root, stage, pose: { y: 6.4, ly: 0 }, baseBlur: 0,
-      update(t) { const wv = waveJS(-3.5 * .75, .5 * .75, t); holder.position.y = wv.h * .2 * .75 + .17; boat.rotation.z = -wv.gx * .03 + Math.sin(t * om(.7)) * .018; boat.rotation.x = wv.gz * .03 + Math.sin(t * om(.55) + 1) * .014; },
+      update(t) { const wv = waveJS(-3.5 * .75, .5 * .75, t); holder.position.y = wv.h * .2 * .75 + .17; boat.rotation.z = -wv.gx * .03 + Math.sin(t * .7) * .018; boat.rotation.x = wv.gz * .03 + Math.sin(t * .55 + 1) * .014; },
       enter() {}, setStep() {} };
   })();
 
@@ -822,9 +795,9 @@ async function initEngine() {
     shadowify(mag, true, false); mag.scale.setScalar(.74);
     const off = { x: 0 };
     return { root, stage, pose: { y: 0, ly: 0 }, baseBlur: 0,
-      update(t) { bars.forEach(b => { const s = 1 + .03 * Math.sin(t * om(.7) + b.userData.ph); b.scale.y = s; b.position.y = b.userData.y0 * s; });
-        mag.position.set(off.x - .25 + Math.sin(t * om(.4)) * .3, -1.3 + Math.sin(t * om(.6, 2)) * .15, 1.3); mag.rotation.z = Math.sin(t * om(.35)) * .08; mag.rotation.y = Math.sin(t * om(.25)) * .12; },
-      exportPose() { off.x = 0; }, enter() { off.x = 0; }, setStep(n) { gsap.to(off, { x: n === 1 ? -.6 : n === 2 ? .6 : 0, duration: 1.6, ease: 'power3.inOut' }); } };
+      update(t) { bars.forEach(b => { const s = 1 + .03 * Math.sin(t * .7 + b.userData.ph); b.scale.y = s; b.position.y = b.userData.y0 * s; });
+        mag.position.set(off.x - .25 + Math.sin(t * .4) * .3, -1.3 + Math.sin(t * .6) * .15, 1.3); mag.rotation.z = Math.sin(t * .35) * .08; mag.rotation.y = Math.sin(t * .25) * .12; },
+      enter() { off.x = 0; }, setStep(n) { gsap.to(off, { x: n === 1 ? -.6 : n === 2 ? .6 : 0, duration: 1.6, ease: 'power3.inOut' }); } };
   })();
 
   /* 6 · limestone spiral staircase rising to a soft light */
@@ -845,11 +818,11 @@ async function initEngine() {
     const core = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: '#FFFFFF', transparent: true, opacity: .95, depthWrite: false })); core.scale.setScalar(3.2); core.position.set(0, topY + .4, -.6); st.add(core);
     const beam = new THREE.Mesh(new THREE.ConeGeometry(1.6, 4.2, 40, 1, true), new THREE.MeshBasicMaterial({ color: '#FFFFFF', transparent: true, opacity: .14, side: THREE.DoubleSide, depthWrite: false })); beam.position.set(0, topY - 1.6, 0); st.add(beam);
     const lit = { v: 4 }; let litTween = null;
-    const setLit = (n, instant) => { const v = [4, 8, 12, 16, NS][Math.min(n, 4)]; litTween && litTween.kill(); if (instant) { lit.v = v; return; } litTween = gsap.to(lit, { v, duration: 1.5, ease: 'power2.out' }); };
+    const setLit = (n, instant) => { const v = [4, 8, 12, 16, NS][Math.min(n, 4)]; litTween && litTween.kill(); litTween = gsap.to(lit, { v, duration: instant ? 0 : 1.5, ease: 'power2.out' }); };
     return { root, stage, pose: { y: 3.4, ly: -.3 }, baseBlur: 0,
-      update(t) { st.rotation.y = EXPORT ? Math.sin(t * om(.07, 1)) * .35 : t * .07; strips.forEach((s, i) => { s.visible = i < lit.v - .01; });
-        const k = lit.v / NS; core.material.opacity = .6 + .4 * k; core.scale.setScalar(2.6 + 1.6 * k + Math.sin(t * om(1.2)) * .08); halo.material.opacity = .2 + .18 * k; beam.material.opacity = .06 + .12 * k; },
-      exportPose() { lit.v = NS; }, enter() { lit.v = 4; }, setStep(n, instant) { setLit(n, instant); } };
+      update(t) { st.rotation.y = t * .07; strips.forEach((s, i) => { s.visible = i < lit.v - .01; });
+        const k = lit.v / NS; core.material.opacity = .6 + .4 * k; core.scale.setScalar(2.6 + 1.6 * k + Math.sin(t * 1.2) * .08); halo.material.opacity = .2 + .18 * k; beam.material.opacity = .06 + .12 * k; },
+      enter() { lit.v = 4; }, setStep(n, instant) { setLit(n, instant); } };
   })();
 
   /* 7 · sunset over the lake */
@@ -867,9 +840,7 @@ async function initEngine() {
   })();
 
   /* ---------- layout / resize ---------- */
-  let expState = null;
   function layout() {
-    if (expState) return;                                    // export mode sizes the canvas itself
     const w = innerWidth, h = innerHeight, aspect = w / h; renderer.setSize(w, h, false); camera.aspect = aspect; camera.fov = cam.fov; camera.updateProjectionMatrix();
     const portrait = aspect < 1, fit = portrait ? Math.min(1, aspect * 1.7 / (16 / 9)) * .6 : Math.min(1, aspect / (16 / 9));
     worlds.forEach((wd, i) => { wd.stage.scale.setScalar(Math.max(.3, fit)); wd.stage.position.y = portrait ? (i === 0 ? -2.4 : 2.2) : 0; });
@@ -881,54 +852,20 @@ async function initEngine() {
   worlds.forEach(w => { w.root.visible = true; }); renderer.compile(scene, camera); worlds.forEach(w => { w.root.visible = false; });
 
   /* ---------- loop ---------- */
-  const clock = new THREE.Clock(); let last = 0, previewStop = false;
-  function frame(t, dt) {
-    U.time.value = t;
+  const clock = new THREE.Clock(); let last = 0;
+  renderer.setAnimationLoop(() => {
+    const t = clock.getElapsedTime(), dt = Math.min(.05, t - last); last = t; U.time.value = t;
     pointer.sx += (pointer.x - pointer.sx) * .04; pointer.sy += (pointer.y - pointer.sy) * .04;
-    camera.position.set(cam.x + pointer.sx * .35, cam.y - pointer.sy * .2 + Math.sin(t * om(.25)) * .06, cam.z); camera.lookAt(cam.x, cam.ly, 0);
-    const fov = expState ? 2 * Math.atan(Math.tan(cam.fov * Math.PI / 360) * expState.fovK) * 180 / Math.PI : cam.fov;
-    if (Math.abs(camera.fov - fov) > .001) { camera.fov = fov; camera.updateProjectionMatrix(); }
+    camera.position.set(cam.x + pointer.sx * .35, cam.y - pointer.sy * .2 + Math.sin(t * .25) * .06, cam.z); camera.lookAt(cam.x, cam.ly, 0);
+    if (Math.abs(camera.fov - cam.fov) > .01) { camera.fov = cam.fov; camera.updateProjectionMatrix(); }
     sun.position.set(cam.x - 6, 9, 8); sun.target.position.set(cam.x, 0, 0);
     worlds.forEach(w => { if (w.root.visible) w.update(t, dt); });
     renderer.render(scene, camera);
-  }
-  if (!EXPORT) renderer.setAnimationLoop(() => { const t = clock.getElapsedTime(), dt = Math.min(.05, t - last); last = t; frame(t, dt); });
+  });
 
   return { worlds, THREE,
     setVisible(set) { worlds.forEach((w, i) => { w.root.visible = set.includes(i); }); },
-    applyBlur(b) { canvas.style.filter = b > .3 ? `blur(${b.toFixed(1)}px)` : 'none'; },
-    frame,
-    /** export mode, live preview in the window (?export=N): the background of slide N looping in real time */
-    exportPreview(i) {
-      expState = null; layout(); const pose = worlds[i].pose || { y: 0, ly: 0 };
-      Object.assign(cam, { x: i * SPACING, y: pose.y, ly: pose.ly, z: 14, fov: 32 });
-      this.setVisible([i]); this.applyBlur(worlds[i].baseBlur || 0); worlds[i].exportPose && worlds[i].exportPose();
-      previewStop = false; const tick = () => { if (previewStop) return; frame((performance.now() / 1000) % LOOP_T, 1 / 30); requestAnimationFrame(tick); }; tick();
-    },
-    /** export mode, driven by a script: fixed w x h canvas (plus an overscan margin so the CSS blur of slide 2 has no soft edges) */
-    exportSetup(i, { w = 1920, h = 1080, pad } = {}) {
-      previewStop = true;
-      const bb = worlds[i].baseBlur || 0, p = pad ?? (bb > 0 ? Math.ceil(bb * 8) : 0), W = w + 2 * p, H = h + 2 * p;
-      expState = { w, h, pad: p, fovK: H / h };
-      renderer.setPixelRatio(1); renderer.setSize(W, H, false);
-      canvas.style.cssText = `position:fixed;left:${-p}px;top:${-p}px;width:${W}px;height:${H}px;display:block;`;
-      camera.aspect = W / H;
-      worlds.forEach(wd => { wd.stage.scale.setScalar(1); wd.stage.position.y = 0; });
-      const pose = worlds[i].pose || { y: 0, ly: 0 };
-      Object.assign(cam, { x: i * SPACING, y: pose.y, ly: pose.ly, z: 14, fov: 32 });
-      pointer.x = pointer.y = pointer.sx = pointer.sy = 0;
-      this.setVisible([i]); this.applyBlur(bb); worlds[i].exportPose && worlds[i].exportPose();
-      camera.updateProjectionMatrix();
-      return { W, H, pad: p };
-    },
-    /** mean / max difference (0-255) between the renders at times t1 and t2: ~0 when the loop is seamless */
-    exportCompare(t1, t2) {
-      const c2 = document.createElement('canvas'); c2.width = canvas.width; c2.height = canvas.height; const g = c2.getContext('2d', { willReadFrequently: true });
-      frame(t1, 1 / 30); g.drawImage(canvas, 0, 0); const a = g.getImageData(0, 0, c2.width, c2.height).data;
-      frame(t2, 1 / 30); g.drawImage(canvas, 0, 0); const b = g.getImageData(0, 0, c2.width, c2.height).data;
-      let sum = 0, max = 0; for (let k = 0; k < a.length; k += 4) for (let j = 0; j < 3; j++) { const d = Math.abs(a[k + j] - b[k + j]); sum += d; if (d > max) max = d; }
-      return { mean: sum / (a.length / 4 * 3), max };
-    } };
+    applyBlur(b) { canvas.style.filter = b > .3 ? `blur(${b.toFixed(1)}px)` : 'none'; } };
 }
 
 /* ---------------------------------------------------------------------
@@ -1078,16 +1015,7 @@ addEventListener('contextmenu', e => { if (!e.target.closest('[contenteditable]'
 /* ---------------------------------------------------------------------
    Boot
    --------------------------------------------------------------------- */
-async function bootExport() {
-  document.documentElement.classList.add('export');
-  try { engine = await initEngine(); } catch (err) { window.__exportError = String((err && err.stack) || err); return; }
-  const n = parseInt(new URLSearchParams(location.search).get('export'), 10);
-  window.__export = { T: LOOP_T, N, setup: (i, o) => engine.exportSetup(i, o), render: t => engine.frame(t, 1 / 30), compare: (a, b) => engine.exportCompare(a, b) };
-  engine.exportPreview(n >= 1 && n <= N ? n - 1 : 0);
-  window.__exportReady = true;
-}
 (async () => {
-  if (EXPORT) { await bootExport(); return; }
   try { engine = await initEngine(); } catch (err) { console.warn('3D disabled:', err); engine = null; }
   const h = parseInt(location.hash.slice(1), 10), start = h >= 1 && h <= N ? h - 1 : 0;      // e.g. index.html#5 opens slide 5
   current = start; cam.x = camX(start); cam.y = poseOf(start).y; cam.ly = poseOf(start).ly;
